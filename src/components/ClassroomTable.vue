@@ -1,5 +1,5 @@
 <!-- src/components/ClassroomTable.vue -->
- <template>
+<template>
     <div class="classroom-table">
         <h2>Аудитории корпуса {{ buildingName }}</h2>
         <div class="filter">
@@ -29,7 +29,7 @@
         </table>
         <p v-else>Нет аудиторий для отображения</p>
     </div>
- </template>
+</template>
 
 <script>
 import axios from '../axios.js';
@@ -73,7 +73,7 @@ export default {
 
                 this.filteredClassrooms = this.classrooms;
                 this.extractFloors();
-            } catch(error) {
+            } catch (error) {
                 console.error('ошибка при загрузке аудиторий:', error);
                 // уведомление для пользователя при необходимости
             }
@@ -108,7 +108,7 @@ export default {
                 } else {
                     console.warn('Корпус не найден.');
                 }
-            } catch(error) {
+            } catch (error) {
                 console.error('ошибка при получении названия корпуса: ', error);
                 // уведомление для пользователя
             }
@@ -139,7 +139,8 @@ table {
     border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
     border: 1px solid #ddd;
     padding: 8px;
 }

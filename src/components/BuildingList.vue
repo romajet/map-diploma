@@ -1,18 +1,14 @@
 <!-- src/components/BuildingList.vue -->
- <template>
+<template>
     <div class="Building-list">
-        <button
-            v-for="building in buildings"
-            :key="building.id"
-            @click="selectBuilding(building.id)"
-            class="building-button"
-        >
+        <button v-for="building in buildings" :key="building.id" @click="selectBuilding(building.id)"
+            class="building-button">
             {{ building.name }}
         </button>
     </div>
- </template>
+</template>
 
- <script>
+<script>
 import axios from '../axios.js';
 
 export default {
@@ -40,7 +36,7 @@ export default {
                     id: el.getElementsByTagName('Id')[0].textContent,
                     name: el.getElementsByTagName('Name')[0].textContent,
                 }));
-            } catch(error) {
+            } catch (error) {
                 console.error('ошибка при загрузке корпусов: ', error);
                 // уведомление для пользователя при необходимости
             }
