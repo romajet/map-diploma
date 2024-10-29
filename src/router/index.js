@@ -1,8 +1,6 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHashHistory } from "vue-router";
 import BuildingListView from "@/views/BuildingListView.vue";
 import ClassroomTableView from "@/views/ClassroomTableView.vue";
-//import BuildingList from "@/components/BuildingList.vue";
-//import ClassroomTable from "@/components/ClassroomTable.vue";
 
 const routes = [
   {
@@ -19,7 +17,7 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes,
 });
 
