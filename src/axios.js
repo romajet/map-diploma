@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// получение данных как обычный текст
 const instance = axios.create({
     baseURL : 'https://mapapi.susu.ru/integration/map',
     headers: {

@@ -38,9 +38,9 @@ export default {
     name: 'ClassroomTable',
     props: {
         buildingId: {
-            type: Number,
-            required: true
-        }
+            type: String,
+            required: true,
+        },
     },
     data() {
         return {
@@ -51,14 +51,13 @@ export default {
             buildingName: ''
         };
     },
-    created() {
-        this.fetchClassrooms();
-        this.fetchBuildingName();
+    async created() {
+        await Promise.all([this.fetchClassrooms(), this.fetchBuildingName()]);
     },
     methods: {
         async fetchClassrooms() {
             try {
-                const response = await axios.get('/rooms/buildingId/${this.buildingId}', {
+                const response = await axios.get(`/rooms/buildingId/${this.buildingId}`, {
                     responseType: 'text'
                 });
 
