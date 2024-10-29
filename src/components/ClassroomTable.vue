@@ -139,7 +139,7 @@ table {
     border-collapse: collapse;
 }
 
-th, id {
+th, td {
     border: 1px solid #ddd;
     padding: 8px;
 }
