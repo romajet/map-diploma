@@ -22,20 +22,24 @@ export default {
             buildings: []
         };
     },
-    created() {
-        this.fetchBuildings();
+    async created() {
+        await this.fetchBuildings();
     },
     methods: {
         async fetchBuildings() {
             try {
-                const response = await axios.get('/buildings');
-                if (response.ArrayOfBuilding && response.ArrayOfBuilding.Building) {
-                    this.buildings = Array.isArray(response.ArrayOfBuilding.Building)
-                    ? response.ArrayOfBuilding.Building
-                    : [response.ArrayOfBuilding.Building];
-                } else {
-                    console.warn('структура xml не соответствует ожиданиям');
-                }
+                const response = await axios.get('/buildings', {
+                    responseType: 'text'
+                });
+
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(response.data, 'application/xml');
+                const buildingElements = xmlDoc.getElementsByTagName('Building');
+
+                this.buildings = Array.from(buildingElements).map((el) => ({
+                    id: el.getElementsByTagName('Id')[0].textContent,
+                    name: el.getElementsByTagName('Name')[0].textContent,
+                }));
             } catch(error) {
                 console.error('ошибка при загрузке корпусов: ', error);
                 // уведомление для пользователя при необходимости

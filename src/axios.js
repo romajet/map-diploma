@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { parseStringPromise } from 'xml2js';
 
 // получение данных как обычный текст
 const instance = axios.create({
@@ -9,19 +8,6 @@ const instance = axios.create({
         'Accept': 'application/xml'
     },
     responseType: 'text'
-});
-
-// преобразование xml в json
-instance.interceptors.response.use(async (response) => {
-    try {
-        const result = await parseStringPromise(response.data, { explicitArray: false, trim: true });
-        return result;
-    } catch (error) {
-        console.error('ошибка при парсинге xml: ', error);
-        return Promise.reject(error);
-    }
-}, (error) => {
-    return Promise.reject(error);
 });
 
 export default instance;

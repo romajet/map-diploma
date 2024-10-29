@@ -58,44 +58,56 @@ export default {
     methods: {
         async fetchClassrooms() {
             try {
-                const response = await axios.get('/rooms/buildingId/${this.buildingId}');
-                if (response.ArrayOfRoom && response.ArrayOfRoom.Room) {
-                    this.classrooms = Array.isArray(response.ArrayOfRoom.Room)
-                    ? response.ArrayOfRoom.Room
-                    : [response.ArrayOfRoom.Room];
-                    this.filteredClassrooms = this.classrooms;
-                    this.extractFloors();
-                } else {
-                    console.warn('структура xml не соответствует ожиданиям');
-                }
+                const response = await axios.get('/rooms/buildingId/${this.buildingId}', {
+                    responseType: 'text'
+                });
+
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(response.data, 'application/xml');
+                const roomElements = xmlDoc.getElementsByTagName('Room');
+
+                this.classrooms = Array.from(roomElements).map((el) => ({
+                    id: el.getElementsByTagName('Id')[0].textContent,
+                    name: el.getElementsByTagName('Name')[0].textContent,
+                    floor: el.getElementsByTagName('Floor')[0].textContent,
+                }));
+
+                this.filteredClassrooms = this.classrooms;
+                this.extractFloors();
             } catch(error) {
                 console.error('ошибка при загрузке аудиторий:', error);
                 // уведомление для пользователя при необходимости
             }
         },
         extractFloors() {
-            const floorsSet = new Set(this.classrooms.map(c => parseInt(c.floor, 10)));
+            const floorsSet = new Set(this.classrooms.map((room) => room.floor));
             this.floors = Array.from(floorsSet).sort((a, b) => a - b);
         },
         filterClassrooms() {
             if (this.selectedFloor) {
-                this.filteredClassrooms = this.classrooms.filter(c => parseInt(c.floor, 10) === parseInt(this.selectedFloor, 10));
+                this.filteredClassrooms = this.classrooms.filter((room) => room.floor === this.selectedFloor);
             } else {
                 this.filteredClassrooms = this.classrooms;
             }
         },
         async fetchBuildingName() {
             try {
-                const response = await axios.get('/buildings');
-                if (response.ArrayOfBuilding && response.ArrayOfBuilding.Building) {
-                    const buildings = Array.isArray(response.ArrayOfBuilding.Building)
-                    ? response.ArrayOfBuilding.Building
-                    : [response.ArrayOfBuilding.Building];
-                    const building = buildings.find(b => parseInt(b.Id, 10) === this.buildingId);
-                    this.buildingName = building ? building.name : 'неизвестный корпус';
+                const response = await axios.get('/buildings', {
+                    responseType: 'text'
+                });
+
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(response.data, 'application/xml');
+                const buildingElements = xmlDoc.getElementsByTagName('Building');
+
+                const building = Array.from(buildingElements).find(
+                    (el) => el.getElementsByTagName('Id')[0].textContent === this.buildingId
+                );
+
+                if (building) {
+                    this.buildingName = building.getElementsByTagName('Name')[0].textContent;
                 } else {
-                    this.buildingName = 'неизвестный корпус';
-                    console.warn('структура xml не соответствует ожиданиям при получении названия корпуса');
+                    console.warn('Корпус не найден.');
                 }
             } catch(error) {
                 console.error('ошибка при получении названия корпуса: ', error);
