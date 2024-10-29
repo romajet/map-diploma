@@ -4,8 +4,8 @@
         <h2>Аудитории корпуса {{ buildingName }}</h2>
         <div class="filter">
             <label for="floor-select">Выберите этаж:</label>
-            <select id="floor-select" v-model="selectedFloor" @change="filterClassrooms">
-                <option value="">Все этажи</option>
+            <select id="floor-select" v-model="selectedFloor" @change="updateFloorQuery">
+                <option value="all">Все этажи</option>
                 <option v-for="floor in floors" :key="floor" :value="floor">
                     Этаж {{ floor }}
                 </option>
@@ -49,12 +49,13 @@ export default {
             classrooms: [],
             filteredClassrooms: [],
             floors: [],
-            selectedFloor: '',
+            selectedFloor: 'all',
             buildingName: ''
         };
     },
     async created() {
         await Promise.all([this.fetchClassrooms(), this.fetchBuildingName()]);
+        this.setInitialFloorFromQuery();
     },
     methods: {
         async fetchClassrooms() {
@@ -81,17 +82,6 @@ export default {
                 // уведомление для пользователя при необходимости
             }
         },
-        extractFloors() {
-            const floorsSet = new Set(this.classrooms.map((room) => room.floor));
-            this.floors = Array.from(floorsSet).sort((a, b) => a - b);
-        },
-        filterClassrooms() {
-            if (this.selectedFloor) {
-                this.filteredClassrooms = this.classrooms.filter((room) => room.floor === this.selectedFloor);
-            } else {
-                this.filteredClassrooms = this.classrooms;
-            }
-        },
         async fetchBuildingName() {
             try {
                 const response = await axios.get('/buildings', {
@@ -115,7 +105,31 @@ export default {
                 console.error('ошибка при получении названия корпуса: ', error);
                 // уведомление для пользователя
             }
-        }
+        },
+        extractFloors() {
+            const floorsSet = new Set(this.classrooms.map((room) => room.floor));
+            this.floors = Array.from(floorsSet).sort((a, b) => a - b);
+        },
+        filterClassrooms() {
+            if (this.selectedFloor === 'all') {
+                this.filteredClassrooms = this.classrooms;
+            } else {
+                this.filteredClassrooms = this.classrooms.filter((room) => room.floor === this.selectedFloor);
+            }
+        },
+        setInitialFloorFromQuery() {
+            const floor = this.$route.query.floor || 'all';
+            if (floor === 'all' && this.floors.includes(floor)) {
+                this.selectedFloor = floor;
+                this.filterClassrooms();
+            }
+        },
+        updateFloorQuery() {
+            this.filterClassrooms();
+            this.$router.replace({
+                query: { ...this.$route.query, floor: this.selectedFloor },
+            });
+        },
     },
     watch: {
         buildingId(newId, oldId) {

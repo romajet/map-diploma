@@ -1,3 +1,4 @@
+<!-- src/views/BuildingListView.vue -->
 <template>
     <div>
         <h1>Выбрите корпус</h1>

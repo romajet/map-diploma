@@ -1,3 +1,4 @@
+<!-- src/views/ClassroomTableView.vue -->
 <template>
     <div>
         <ClassroomTable :building-id="buildingId" />
