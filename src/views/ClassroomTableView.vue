@@ -9,6 +9,7 @@ import ClassroomTable from '@/components/ClassroomTable.vue';
 
 export default {
     name: 'ClassroomTableView',
+    components: { ClassroomTable },
     props: {
         id: {
             type: String,

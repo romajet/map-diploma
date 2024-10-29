@@ -15,6 +15,7 @@
             <thead>
                 <tr>
                     <th>#</th>
+                    <th>Номер</th>
                     <th>Название аудитории</th>
                     <th>Этаж</th>
                 </tr>
@@ -22,6 +23,7 @@
             <tbody>
                 <tr v-for="(classroom, index) in filteredClassrooms" :key="classroom.id">
                     <td>{{ index + 1 }}</td>
+                    <td>{{ classroom.number }}</td>
                     <td>{{ classroom.name }}</td>
                     <td>{{ classroom.floor }}</td>
                 </tr>
@@ -69,6 +71,7 @@ export default {
                     id: el.getElementsByTagName('Id')[0].textContent,
                     name: el.getElementsByTagName('Name')[0].textContent,
                     floor: el.getElementsByTagName('Floor')[0].textContent,
+                    number: el.getElementsByTagName('Number')[0].textContent,
                 }));
 
                 this.filteredClassrooms = this.classrooms;

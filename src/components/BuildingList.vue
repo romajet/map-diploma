@@ -42,6 +42,7 @@ export default {
             }
         },
         selectBuilding(buildingId) {
+            console.log('выбран корпус', buildingId);
             this.$emit('building-selected', buildingId);
         }
     }

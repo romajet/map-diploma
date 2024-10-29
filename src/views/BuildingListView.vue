@@ -13,6 +13,7 @@ export default {
     components: { BuildingList },
     methods: {
         goToClassroomTable(buildingId) {
+            console.log('переход к аудиториям корпуса:', buildingId);
             this.$router.push({ name: 'ClassroomTable', params: { id: buildingId } });
         }
     }
