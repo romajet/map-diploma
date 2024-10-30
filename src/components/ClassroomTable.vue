@@ -79,7 +79,6 @@ export default {
                 this.extractFloors();
             } catch (error) {
                 console.error('ошибка при загрузке аудиторий:', error);
-                // уведомление для пользователя при необходимости
             }
         },
         async fetchBuildingName() {

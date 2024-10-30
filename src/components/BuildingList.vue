@@ -38,7 +38,6 @@ export default {
                 }));
             } catch (error) {
                 console.error('ошибка при загрузке корпусов: ', error);
-                // уведомление для пользователя при необходимости
             }
         },
         selectBuilding(buildingId) {
