@@ -118,11 +118,13 @@ export default {
             }
         },
         setInitialFloorFromQuery() {
-            const floor = this.$route.query.floor || 'all';
-            if (floor === 'all' && this.floors.includes(floor)) {
+            const floor = this.$route.query.floor;
+            if (floor && this.floors.includes(floor)) {
                 this.selectedFloor = floor;
-                this.filterClassrooms();
+            } else {
+                this.selectedFloor = 'all';
             }
+            this.filterClassrooms();
         },
         updateFloorQuery() {
             this.filterClassrooms();
@@ -136,6 +138,8 @@ export default {
             if (newId !== oldId) {
                 this.fetchClassrooms();
                 this.fetchBuildingName();
+                this.selectedFloor = 'all';
+                this.filterClassrooms();
             }
         }
     }
