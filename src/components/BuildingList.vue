@@ -1,7 +1,7 @@
 <!-- src/components/BuildingList.vue -->
 <template>
-    <div class="Building-list">
-        <button v-for="building in buildings" :key="building.id" @click="selectBuilding(building.id)"
+    <div class="building-list">
+        <button v-for="building in filteredBuildings" :key="building.id" @click="selectBuilding(building.id)"
             class="building-button">
             {{ building.name }}
         </button>
@@ -20,6 +20,16 @@ export default {
     },
     async created() {
         await this.fetchBuildings();
+    },
+    computed: {
+        filteredBuildings() {
+            return this.buildings.filter(building =>
+                (building.name.includes('ентральн') || building.name.includes('Учебный к')) &&
+                !building.name.includes('4') &&
+                !building.name.includes('5') &&
+                !building.name.includes('6')
+            );
+        },
     },
     methods: {
         async fetchBuildings() {
@@ -60,7 +70,7 @@ export default {
     border: none;
     color: white;
     cursor: pointer;
-    border-radius: 5px;
+    border-radius: 4px;
     transition: background-color 0.3s;
 }
 
