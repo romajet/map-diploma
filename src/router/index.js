@@ -2,6 +2,7 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 import BuildingListView from "@/views/BuildingListView.vue";
 import ClassroomTableView from "@/views/ClassroomTableView.vue";
+import FloorMapView from "@/views/FloorMapView.vue";
 
 const routes = [
   {
@@ -14,6 +15,11 @@ const routes = [
     name: "ClassroomTable",
     component: ClassroomTableView,
     props: true,
+  },
+  {
+    path: "/test-map-view",
+    name: "floorMap",
+    component: FloorMapView,
   },
 ];
 
