@@ -6,26 +6,51 @@
             :config="{ width: stageWidth, height: stageHeight, draggable: true, scale: { x: scale, y: scale } }"
             @wheel="handleZoom">
             <v-layer>
-                <v-line v-for="(building, index) in buildings" :key="index" :points="building.points" :config="{
-                    closed: true,
-                    stroke: building.color || 'black',
-                    strokeWidth: 2,
-                    fill: building.fill || 'gray'
-                }" />
+                <!-- отрисовка заливки корпуса -->
+                <v-line v-for="(building, index) in buildings"
+                    :key="index"
+                    :points="building.points"
+                    :config="{
+                        closed: true,
+                        fill: building.fill || 'gray'
+                    }"
+                />
 
-                <v-line v-for="(classroom, index) in classrooms" :key="index" :points="classroom.points" :config="{
-                    closed: true,
-                    stroke: classroom.color || 'blue',
-                    strokeWidth: 1,
-                    fill: classroom.fill || 'lightblue'
-                }" />
+                <!-- отрисовка аудиторий -->
+                <v-line v-for="(classroom, index) in classrooms"
+                    :key="index"
+                    :points="classroom.points"
+                    :config="{
+                        closed: true,
+                        stroke: classroom.color || 'blue',
+                        strokeWidth: 1,
+                        fill: classroom.fill || 'lightblue'
+                    }"
+                />
 
-                <!-- Текст для каждой аудитории -->
-                <v-text v-for="(classroom, index) in classrooms" :key="'text-' + index" :text="classroom.name"
-                    :x="(Math.min(...classroom.points.filter((_, i) => i % 2 === 0)) + Math.max(...classroom.points.filter((_, i) => i % 2 === 0))) / 2"
-                    :y="(Math.min(...classroom.points.filter((_, i) => i % 2 === 1)) + Math.max(...classroom.points.filter((_, i) => i % 2 === 1))) / 2"
-                    :font-size="20" :font-family="'Arial'" :fill="'black'" :align="'center'"
-                    :vertical-align="'middle'" />
+                <!-- вывод номеров аудиторий по центру -->
+                <v-text v-for="(classroom, index) in classrooms"
+                    :key="'text-' + index"
+                    :text="classroom.name"
+                    :x="(Math.min(...classroom.points.filter((_, i) => i % 2 === 0)) + Math.max(...classroom.points.filter((_, i) => i % 2 === 0)) - getTextWidth(classroom.name) / 2) / 2"
+                    :y="(Math.min(...classroom.points.filter((_, i) => i % 2 === 1)) + Math.max(...classroom.points.filter((_, i) => i % 2 === 1)) - 10) / 2"
+                    :font-size="20"
+                    :font-family="'Arial'"
+                    :fill="'black'"
+                    :align="'center'"
+                    :vertical-align="'middle'"
+                />
+
+                <!-- отрисовка контура корпуса поверх всего -->
+                <v-line v-for="(building, index) in buildings"
+                    :key="index"
+                    :points="building.points"
+                    :config="{
+                        closed: true,
+                        stroke: building.color || 'black',
+                        strokeWidth: 2
+                    }"
+                />
             </v-layer>
         </v-stage>
     </div>
@@ -46,13 +71,21 @@ export default {
             default: 600,
         },
     },
+    methods: {
+        getTextWidth(text) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            context.font = '20px Arial';
+            return context.measureText(text).width;
+        },
+    },
     setup() {
         const scale = ref(1);
 
-        // Пример координат для корпуса и аудиторий
         const buildings = ref([
             {
-                points: [0, 0, 0, 200, 52, 200, 52, 584, 20, 584,
+                points: [  // координаты точек в порядке x1, y1, x2, y2...
+                    0, 0, 0, 200, 52, 200, 52, 584, 20, 584,
                     20, 808, 1020, 808, 1020, 0, 752, 0, 752, 152,
                     800, 152, 800, 584, 184, 584, 184, 152, 272, 152,
                     272, 0],
@@ -62,6 +95,12 @@ export default {
         ]);
 
         const classrooms = ref([
+            {
+                points: [0, 0, 0, 200, 52, 200, 52, 152, 272, 152, 272, 0],
+                name: "100/1",
+                color: "yellow",
+                fill: "#ffa",
+            },
             {
                 points: [92, 200, 92, 344, 184, 344, 184, 200],
                 name: "101/1",
@@ -82,7 +121,7 @@ export default {
             },
         ]);
 
-        // Обработка колесика мыши для масштабирования
+        // масштабирование колесиком мыши
         const handleZoom = (event) => {
             event.evt.preventDefault();
             const scaleBy = 1.1;
@@ -135,7 +174,7 @@ export default {
     border: none;
     color: white;
     cursor: pointer;
-    border-radius: 5px;
+    border-radius: 4px;
     z-index: 10;
 }
 
