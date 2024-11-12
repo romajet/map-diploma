@@ -3,7 +3,7 @@
     <div class="map-container">
         <!-- <button class="center-button" @click="centerMap">Центрировать</button> -->
         <v-stage ref="stage"
-            :config="{ width: stageWidth, height: stageHeight, draggable: true, scale: { x: scale, y: scale } }"
+            :config="{ width: computedWidth, height: stageHeight, draggable: true, scale: { x: scale, y: scale } }"
             @wheel="handleZoom">
             <v-layer>
                 <!-- отрисовка заливки корпуса -->
@@ -57,7 +57,7 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 
 export default {
     name: "FloorMap",
@@ -121,6 +121,21 @@ export default {
             },
         ]);
 
+        const computedWidth = ref(800);
+
+        const updateComputedWidth = () => {
+            computedWidth.value = Math.min(1700 - 58, window.innerWidth - 58);
+        }
+
+        onMounted(() => {
+            updateComputedWidth();
+            window.addEventListener('resize', updateComputedWidth);
+        });
+
+        onBeforeUnmount(() => {
+            window.removeEventListener('resize', updateComputedWidth);
+        });
+
         // масштабирование колесиком мыши
         const handleZoom = (event) => {
             event.evt.preventDefault();
@@ -133,8 +148,9 @@ export default {
             };
 
             const direction = event.evt.deltaY > 0 ? -1 : 1;
-            const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+            let newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
 
+            newScale = Math.max(0.5, Math.min(newScale, 3));
             scale.value = newScale;
             stage.scale({ x: newScale, y: newScale });
 
@@ -151,6 +167,7 @@ export default {
             buildings,
             classrooms,
             handleZoom,
+            computedWidth,
             //centerMap
         };
     },
@@ -161,8 +178,7 @@ export default {
 .map-container {
     border: 1px solid #ddd;
     position: relative;
-    width: 800px;
-    height: 600px;
+    margin: 0 auto;
 }
 
 .center-button {
