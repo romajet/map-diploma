@@ -1,8 +1,9 @@
 <!-- src/views/BuildingListView.vue -->
 <template>
     <div>
-        <h1>Выбрите корпус</h1>
+        <h1>Таблицы</h1>
         <BuildingList @building-selected="goToClassroomTable" />
+        <h1>Карта</h1>
         <button @click="goToMapView" class="map-button">тест карты</button>
     </div>
 </template>
@@ -26,13 +27,14 @@ export default {
 
 <style scoped>
 .map-button {
-    margin-top: 20px;
-    padding: 10px 20px;
+    width: 200px;
+    height: 80px;
+    padding: 20px;
     background-color: blue;
     color: white;
     border: none;
-    border-radius: 4px;
     cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 .map-button:hover {

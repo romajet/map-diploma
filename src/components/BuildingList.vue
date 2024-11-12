@@ -3,7 +3,7 @@
     <div class="building-list">
         <button v-for="building in filteredBuildings" :key="building.id" @click="selectBuilding(building.id)"
             class="building-button">
-            {{ building.name }}
+            {{ building.name }} ({{ building.short_name }})
         </button>
     </div>
 </template>
@@ -45,6 +45,7 @@ export default {
                 this.buildings = Array.from(buildingElements).map((el) => ({
                     id: el.getElementsByTagName('Id')[0].textContent,
                     name: el.getElementsByTagName('Name')[0].textContent,
+                    short_name: el.getElementsByTagName('ShortName')[0].textContent,
                 }));
             } catch (error) {
                 console.error('ошибка при загрузке корпусов: ', error);
@@ -59,18 +60,27 @@ export default {
 
 <style scoped>
 .building-list {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 10px;
+    width: 100%;
+    justify-items: center;
 }
 
 .building-button {
-    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 500px;
+    height: 80px;
     background-color: #42b983;
     border: none;
     color: white;
     cursor: pointer;
-    border-radius: 4px;
+    font-weight: bold;
+    text-align: center;
+    overflow-wrap: break-word;
     transition: background-color 0.3s;
 }
 
