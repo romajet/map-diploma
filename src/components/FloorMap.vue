@@ -2,13 +2,13 @@
 <template>
     <div class="controls">
         <!-- селектор корпуса -->
-        <select v-model="selectedBuilding" @change="updateDisplay">
+        <select v-model="selectedBuilding" @change="updateDisplay" class="styled-select">
             <option v-for="building in uniqueBuildings" :key="building" :value="building">
                 Корпус {{ building }}
             </option>
         </select>
         <!-- селектор этажа если выбран корпус -->
-        <select v-model="selectedFloor" @change="updateDisplay" v-if="avaliableFloors.length > 0">
+        <select v-model="selectedFloor" @change="updateDisplay" v-if="avaliableFloors.length > 0" class="styled-select">
             <option v-for="floor in avaliableFloors" :key="floor" :value="floor">
                 Этаж {{ floor }}
             </option>
@@ -97,7 +97,7 @@ export default {
         const classrooms = ref([
             {
                 points: [0, 0, 0, 200, 52, 200, 52, 152, 272, 152, 272, 0],
-                name: "100/1",
+                name: "141/1",
                 color: "yellow",
                 fill: "#ffa",
                 buildingId: 1,
@@ -105,7 +105,7 @@ export default {
             },
             {
                 points: [92, 200, 92, 344, 184, 344, 184, 200],
-                name: "101/1",
+                name: "143/1",
                 color: "blue",
                 fill: "#aaf",
                 buildingId: 1,

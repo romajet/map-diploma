@@ -1,0 +1,23 @@
+# from FloorMap.vue
+
+.styled-select {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    color: #333;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.styled-select:hover {
+    background-color: #e6f7ff;
+    border-color: #66afe9;
+}
+
+.styled-select:focus {
+    outline: none;
+    background-color: #d9edf7;
+    border-color: #66afe9;
+}

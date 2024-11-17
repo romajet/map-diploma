@@ -1,29 +1,31 @@
 <!-- src/components/ClassroomTable.vue -->
 <template>
     <div class="classroom-table">
-        <h2>Аудитории корпуса {{ buildingName }}</h2>
+        <h2>{{ buildingName }}</h2>
         <div class="filter">
             <label for="floor-select">Выберите этаж:</label>
             <select id="floor-select" v-model="selectedFloor" @change="updateFloorQuery">
                 <option value="all">Все этажи</option>
                 <option v-for="floor in floors" :key="floor" :value="floor">
-                    Этаж {{ floor }}
+                    {{ floor }}
                 </option>
             </select>
         </div>
         <table v-if="filteredClassrooms.length">
             <thead>
                 <tr>
-                    <th>#</th>
+                    <!-- <th>#</th> -->
                     <th>Номер</th>
+                    <th>Идентификатор</th>
                     <th>Название аудитории</th>
                     <th>Этаж</th>
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="(classroom, index) in filteredClassrooms" :key="classroom.id">
-                    <td>{{ index + 1 }}</td>
+                    <!-- <td>{{ index + 1 }}</td> -->
                     <td>{{ classroom.number }}</td>
+                    <td>{{ classroom.id }}</td>
                     <td>{{ classroom.name }}</td>
                     <td>{{ classroom.floor }}</td>
                 </tr>
