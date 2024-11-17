@@ -1,0 +1,304 @@
+<ArrayOfRoom>
+	<Room>
+		<Floor>1</Floor>
+		<Id>01</Id>
+		<Name>Ауд</Name>
+		<Number>141</Number>
+		<Coordinates points="0,0 0,200 52,200 52,152 272,152 272,0"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>02</Id>
+		<Name>Ауд</Name>
+		<Number>143</Number>
+		<Coordinates points="92,200 92,344 184,344 184,200"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>03</Id>
+		<Name>Ауд</Name>
+		<Number>145</Number>
+		<Coordinates points="92,344 92,392 184,392 184,344"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>04</Id>
+		<Name>Ауд</Name>
+		<Number>146</Number>
+		<Coordinates points="244,712 244,808 532,808 532,712"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>05</Id>
+		<Name>Ауд</Name>
+		<Number>146а</Number>
+		<Coordinates points="532,712 532,808 584,808 584,712"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>06</Id>
+		<Name>Ауд</Name>
+		<Number>147</Number>
+		<Coordinates points="92,392 92,488 184,488 184,392"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>07</Id>
+		<Name>Ауд</Name>
+		<Number>148</Number>
+		<Coordinates points="584,712 584,808 776,808 776,712"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>08</Id>
+		<Name>Ауд</Name>
+		<Number>149</Number>
+		<Coordinates points="92,488 92,540 184,540 184,488"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>09</Id>
+		<Name>Ауд</Name>
+		<Number>150</Number>
+		<Coordinates points="776,712 776,808 828,808 828,712"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>10</Id>
+		<Name>Ауд</Name>
+		<Number>151</Number>
+		<Coordinates points="288,584 288,672 336,672 336,584"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>11</Id>
+		<Name>Ауд</Name>
+		<Number>152</Number>
+		<Coordinates points="828,712 828,808 1020,808 1020,712"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>12</Id>
+		<Name>Ауд</Name>
+		<Number>153</Number>
+		<Coordinates points="336,584 336,672 488,672 488,584"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>13</Id>
+		<Name>Ауд</Name>
+		<Number>153а</Number>
+		<Coordinates points="488,584 488,672 532,672 532,584"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>14</Id>
+		<Name>Ауд</Name>
+		<Number>153б</Number>
+		<Coordinates points="532,584 532,672 584,672 584,584"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>15</Id>
+		<Name>Ауд</Name>
+		<Number>154</Number>
+		<Coordinates points="932,636 932,712 1020,712 1020,636"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>16</Id>
+		<Name>Ауд</Name>
+		<Number>155</Number>
+		<Coordinates points="584,584 584,672 752,672 752,584"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>17</Id>
+		<Name>Ауд</Name>
+		<Number>155а</Number>
+		<Coordinates points="752,636 752,672 828,672 828,636"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>18</Id>
+		<Name>Ауд</Name>
+		<Number>156</Number>
+		<Coordinates points="932,584 932,636 1020,636 1020,584"/>
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>19</Id>
+		<Name>Ауд</Name>
+		<Number>157</Number>
+		<Coordinates points="800,488 800,536 892,536 892,488" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>20</Id>
+		<Name>Ауд</Name>
+		<Number>158</Number>
+		<Coordinates points="932,536 932,584 1020,584 1020,536" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>21</Id>
+		<Name>Ауд</Name>
+		<Number>159</Number>
+		<Coordinates points="800,440 800,488 892,488 892,440" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>22</Id>
+		<Name>Ауд</Name>
+		<Number>160</Number>
+		<Coordinates points="932,392 932,536 1020,536 1020,392" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>23</Id>
+		<Name>Ауд</Name>
+		<Number>161</Number>
+		<Coordinates points="800,392 800,440 892,440 892,392" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>24</Id>
+		<Name>Ауд</Name>
+		<Number>162</Number>
+		<Coordinates points="932,252 932,392 1020,392 1020,252" />
+	</Room>
+	<!-- <Room>
+		<Floor>1</Floor>
+		<Id>25</Id>
+		<Name>Ауд</Name>
+		<Number>162а</Number>
+		<Coordinates points="?" />
+	</Room> -->
+	<Room>
+		<Floor>1</Floor>
+		<Id>26</Id>
+		<Name>Ауд</Name>
+		<Number>163</Number>
+		<Coordinates points="800,344 800,392 892,392 892,344" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>27</Id>
+		<Name>Ауд</Name>
+		<Number>164</Number>
+		<Coordinates points="932,200 932,252 1020,252 1020,200" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>28</Id>
+		<Name>Ауд</Name>
+		<Number>165</Number>
+		<Coordinates points="800,200 800,344 892,344 892,200" />
+	</Room>
+	<!-- <Room>
+		<Floor>1</Floor>
+		<Id>29</Id>
+		<Name>Ауд</Name>
+		<Number>165а</Number>
+		<Coordinates points="?" />
+	</Room> -->
+	<!-- <Room>
+		<Floor>1</Floor>
+		<Id>30</Id>
+		<Name>Ауд</Name>
+		<Number>165б</Number>
+		<Coordinates points="?" />
+	</Room> -->
+	<Room>
+		<Floor>1</Floor>
+		<Id>31</Id>
+		<Name>Ауд</Name>
+		<Number>166</Number>
+		<Coordinates points="932,152 932,200 1020,200 1020,152" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>32</Id>
+		<Name>Ауд</Name>
+		<Number>167</Number>
+		<Coordinates points="752,0 752,152 900,152 900,112 844,112 844,0" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>33</Id>
+		<Name>Ауд</Name>
+		<Number>168</Number>
+		<Coordinates points="932,0 932,152 1020,152 1020,0" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>34</Id>
+		<Name>Ауд</Name>
+		<Number>169</Number>
+		<Coordinates points="844,0 844,112 932,112 932,0" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>35</Id>
+		<Name>Жен</Name>
+		<Number>-</Number>
+		<Coordinates points="244,584 244,672 288,672 288,584" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>36</Id>
+		<Name>Муж</Name>
+		<Number>-</Number>
+		<Coordinates points="800,536 800,584 892,584 892,536" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>37</Id>
+		<Name>Ауд</Name>
+		<Number>-</Number>
+		<Coordinates points="852,584 852,636 884,636 884,584" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>38</Id>
+		<Name>Лестница</Name>
+		<Number>-</Number>
+		<Coordinates points="92,540 92,656 184,656 184,540" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>39</Id>
+		<Name>Лестница</Name>
+		<Number>-</Number>
+		<Coordinates points="92,152 92,200 184,200 184,152" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>40</Id>
+		<Name>Лестница</Name>
+		<Number>-</Number>
+		<Coordinates points="752,584 752,636 852,636 852,584" />
+	</Room>
+	<Room>
+		<Floor>1</Floor>
+		<Id>41</Id>
+		<Name>Лестница</Name>
+		<Number>-</Number>
+		<Coordinates points="800,152 800,200 892,200 892,152" />
+	</Room>
+	<!-- второй этаж -->
+	<Room>
+		<Floor>2</Floor>
+		<Id>100</Id>
+		<Name>Ауд</Name>
+		<Number>146</Number>
+		<Coordinates points="244,712 244,808 532,808 532,712"/>
+	</Room>
+	<Room>
+		<Floor>2</Floor>
+		<Id>101</Id>
+		<Name>Ауд</Name>
+		<Number>147</Number>
+		<Coordinates points="92,392 92,488 184,488 184,392"/>
+	</Room>
+</ArrayOfRoom>

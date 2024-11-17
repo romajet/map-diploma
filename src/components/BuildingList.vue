@@ -1,7 +1,7 @@
 <!-- src/components/BuildingList.vue -->
 <template>
     <div class="building-list">
-        <button v-for="building in filteredBuildings" :key="building.id" @click="selectBuilding(building.id)"
+        <button v-for="building in buildings" :key="building.id" @click="selectBuilding(building.id)"
             class="building-button">
             {{ building.name }} ({{ building.short_name }})
         </button>
@@ -22,6 +22,7 @@ export default {
         await this.fetchBuildings();
     },
     computed: {
+        // можно удалить, если не понадобится
         filteredBuildings() {
             return this.buildings.filter(building =>
                 (building.name.includes('ентральн') || building.name.includes('Учебный к')) &&
@@ -74,7 +75,7 @@ export default {
     width: 100%;
     max-width: 500px;
     height: 80px;
-    background-color: #42b983;
+    background-color: #275886;
     border: none;
     color: white;
     cursor: pointer;
@@ -85,6 +86,6 @@ export default {
 }
 
 .building-button:hover {
-    background-color: #2c8c6d;
+    background-color: #2c72a5;
 }
 </style>

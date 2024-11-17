@@ -15,9 +15,8 @@
         </select>
     </div>
     <div class="map-container">
-        <!-- <button class="center-button" @click="centerMap">Центрировать</button> -->
         <v-stage ref="stage"
-            :config="{ width: computedWidth, height: stageHeight, draggable: true, scale: { x: scale, y: scale } }"
+            :config="{ width: computedWidth, height: computedHeight, draggable: true, scale: { x: scale, y: scale } }"
             @wheel="handleZoom">
             <v-layer>
                 <!-- отрисовка заливки корпуса -->
@@ -32,12 +31,12 @@
                         closed: true,
                         stroke: classroom.color || 'blue',
                         strokeWidth: 1,
-                        fill: classroom.fill || 'lightblue'
+                        fill: getFillColor(classroom.name)
                     }" />
 
                 <!-- вывод номеров аудиторий по центру -->
-                <v-text v-for="(classroom, index) in filteredClassrooms" :key="'text-' + index" :text="classroom.name"
-                    :x="(Math.min(...classroom.points.filter((_, i) => i % 2 === 0)) + Math.max(...classroom.points.filter((_, i) => i % 2 === 0)) - getTextWidth(classroom.name) / 2) / 2"
+                <v-text v-for="(classroom, index) in filteredClassrooms" :key="'text-' + index" :text="classroom.number"
+                    :x="(Math.min(...classroom.points.filter((_, i) => i % 2 === 0)) + Math.max(...classroom.points.filter((_, i) => i % 2 === 0)) - getTextWidth(classroom.number) / 2) / 2"
                     :y="(Math.min(...classroom.points.filter((_, i) => i % 2 === 1)) + Math.max(...classroom.points.filter((_, i) => i % 2 === 1)) - 10) / 2"
                     :font-size="20" :font-family="'Arial'" :fill="'black'" :align="'center'"
                     :vertical-align="'middle'" />
@@ -55,6 +54,7 @@
 
 <script>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import axios from 'axios';
 
 export default {
     name: "FloorMap",
@@ -74,93 +74,73 @@ export default {
         const scale = ref(1);
         const selectedBuilding = ref(null);
         const selectedFloor = ref(null);
-
-        const buildings = ref([
-            {
-                points: [  // координаты точек в порядке x1, y1, x2, y2...
-                    0, 0, 0, 200, 52, 200, 52, 584, 20, 584,
-                    20, 808, 1020, 808, 1020, 0, 752, 0, 752, 152,
-                    800, 152, 800, 584, 184, 584, 184, 152, 272, 152,
-                    272, 0],
-                color: "black",
-                fill: "#ccc",
-                buildingId: 1,
-            },
-            {
-                points: [0, 0, 0, 200, 400, 200, 400, 0],
-                color: "black",
-                fill: "#ddd",
-                buildingId: 2,
-            },
-        ]);
-
-        const classrooms = ref([
-            {
-                points: [0, 0, 0, 200, 52, 200, 52, 152, 272, 152, 272, 0],
-                name: "141/1",
-                color: "yellow",
-                fill: "#ffa",
-                buildingId: 1,
-                floor: 1
-            },
-            {
-                points: [92, 200, 92, 344, 184, 344, 184, 200],
-                name: "143/1",
-                color: "blue",
-                fill: "#aaf",
-                buildingId: 1,
-                floor: 1
-            },
-            {
-                points: [92, 344, 92, 392, 184, 392, 184, 344],
-                name: "202/1",
-                color: "green",
-                fill: "#afa",
-                buildingId: 1,
-                floor: 2
-            },
-            {
-                points: [92, 392, 92, 488, 184, 488, 184, 392],
-                name: "203/1",
-                color: "red",
-                fill: "#faa",
-                buildingId: 1,
-                floor: 2
-            },
-            {
-                points: [200, 0, 200, 50, 400, 50, 400, 0],
-                name: "101/2",
-                color: "blue",
-                fill: "#aaf",
-                buildingId: 2,
-                floor: 1
-            },
-            {
-                points: [0, 150, 0, 200, 200, 200, 200, 150],
-                name: "102/2",
-                color: "green",
-                fill: "#afa",
-                buildingId: 2,
-                floor: 1
-            },
-            {
-                points: [200, 150, 200, 200, 400, 200, 400, 150],
-                name: "203/2",
-                color: "red",
-                fill: "#faa",
-                buildingId: 2,
-                floor: 2
-            },
-        ]);
-
+        const buildings = ref([]);
+        const classrooms = ref([]);
         const computedWidth = ref(800);
+        const computedHeight = ref(600);
 
-        const updateComputedWidth = () => {
-            computedWidth.value = Math.min(1700 - 58, window.innerWidth - 58);
+        const getFillColor = (name) => {
+            if (name.includes("Лестница"))
+                return "LightCyan";
+            else if (name.includes("Муж"))
+                return "SkyBlue";
+            else if (name.includes("Жен"))
+                return "Pink";
+            else
+                return "lightblue";
         }
 
+        const updateComputedSize = () => {
+            const avaliableHeight = window.innerHeight - 65;
+            computedWidth.value = Math.min(1700 - 58, window.innerWidth - 58);
+            computedHeight.value = avaliableHeight > 400 ? avaliableHeight : 400;
+        };
+
+        const fetchBuildings = async () => {
+            try {
+                const response = await axios.get('xml-data/buildings.xml', {
+                    responseType: 'text'
+                });
+
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(response.data, 'application/xml');
+                const buildingElements = xmlDoc.getElementsByTagName('Building');
+
+                buildings.value = Array.from(buildingElements).map((el) => ({
+                    buildingId: el.getElementsByTagName('Id')[0].textContent,
+                    name: el.getElementsByTagName('Name')[0].textContent,
+                    points: Array.from(el.getElementsByTagName('Point')).flatMap(p => p.textContent.split(',').map(Number)),
+                }));
+            } catch (error) {
+                console.error('ошибка загрузки корпусов из файла: ', error);
+            }
+        };
+
+        const fetchClassrooms = async (buildingId) => {
+            try {
+                const response = await axios.get(`xml-data/classrooms_${buildingId}.xml`, {
+                    responseType: 'text'
+                });
+
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(response.data, 'application/xml');
+                const roomElements = xmlDoc.getElementsByTagName('Room');
+
+                classrooms.value = Array.from(roomElements).map((el) => ({
+                    floor: el.getElementsByTagName('Floor')[0].textContent,
+                    name: el.getElementsByTagName('Name')[0].textContent,
+                    number: el.getElementsByTagName('Number')[0].textContent,
+                    points: el.getElementsByTagName('Coordinates')[0]
+                        .getAttribute('points').split(' ').flatMap(p => p.split(',').map(Number)),
+                    buildingId
+                }));
+            } catch (error) {
+                console.error('ошибка загрузки корпусов из файла: ', error);
+            }
+        };
+
         const uniqueBuildings = computed(() => {
-            return [...new Set(classrooms.value.map(room => room.buildingId))];
+            return buildings.value.map(building => building.buildingId);
         });
 
         const avaliableFloors = computed(() => {
@@ -182,19 +162,19 @@ export default {
             );
         });
 
-        onMounted(() => {
-            updateComputedWidth();
-            window.addEventListener('resize', updateComputedWidth);
-
-            // пока первый в списке корпус и его первый этаж
-            if (uniqueBuildings.value.length > 0) {
-                selectedBuilding.value = uniqueBuildings.value[0];
+        onMounted(async () => {
+            updateComputedSize();
+            window.addEventListener('resize', updateComputedSize);
+            await fetchBuildings();
+            if (buildings.value.length > 0) {
+                selectedBuilding.value = buildings.value[0].buildingId;
+                await fetchClassrooms(selectedBuilding.value);
                 updateDisplay();
             }
         });
 
         onBeforeUnmount(() => {
-            window.removeEventListener('resize', updateComputedWidth);
+            window.removeEventListener('resize', updateComputedSize);
         });
 
         // масштабирование колесиком мыши
@@ -223,9 +203,9 @@ export default {
             stage.batchDraw();
         };
 
-        const updateDisplay = () => {
+        const updateDisplay = async () => {
             if (selectedBuilding.value) {
-                // Если текущий выбранный этаж недоступен для выбранного корпуса, сбросить этаж
+                await fetchClassrooms(selectedBuilding.value);
                 if (!avaliableFloors.value.includes(selectedFloor.value)) {
                     selectedFloor.value = avaliableFloors.value.length > 0 ? avaliableFloors.value[0] : null;
                 }
@@ -237,7 +217,9 @@ export default {
             buildings,
             classrooms,
             handleZoom,
+            getFillColor,
             computedWidth,
+            computedHeight,
             selectedBuilding,
             selectedFloor,
             uniqueBuildings,
@@ -245,7 +227,8 @@ export default {
             filteredBuildings,
             filteredClassrooms,
             updateDisplay,
-            //centerMap
+            fetchBuildings,
+            fetchClassrooms,
         };
     },
 };
@@ -262,22 +245,5 @@ export default {
     display: flex;
     gap: 10px;
     margin-bottom: 10px;
-}
-
-.center-button {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    padding: 8px 16px;
-    background-color: #42b983;
-    border: none;
-    color: white;
-    cursor: pointer;
-    border-radius: 4px;
-    z-index: 10;
-}
-
-.center-button:hover {
-    background-color: #2c8c6d;
 }
 </style>

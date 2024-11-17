@@ -1,0 +1,36 @@
+<ArrayOfBuilding>
+	<Building>
+		<Id>123</Id>
+		<Name>Корпус 1</Name>
+		<ShortName>1</ShortName>
+		<Coordinates>
+			<Point>0,0</Point>
+			<Point>0,200</Point>
+			<Point>52,200</Point>
+			<Point>52,584</Point>
+			<Point>20,584</Point>
+			<Point>20,808</Point>
+			<Point>1020,808</Point>
+			<Point>1020,0</Point>
+			<Point>752,0</Point>
+			<Point>752,152</Point>
+			<Point>800,152</Point>
+			<Point>800,584</Point>
+			<Point>184,584</Point>
+			<Point>184,152</Point>
+			<Point>272,152</Point>
+			<Point>272,0</Point>
+		</Coordinates>
+	</Building>
+	<Building>
+		<Id>abc</Id>
+		<Name>Корпус 2</Name>
+		<ShortName>2</ShortName>
+		<Coordinates>
+			<Point>0,0</Point>
+			<Point>0,200</Point>
+			<Point>400,200</Point>
+			<Point>400,0</Point>
+		</Coordinates>
+	</Building>
+</ArrayOfBuilding>
