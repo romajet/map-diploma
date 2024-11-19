@@ -91,7 +91,7 @@ export default {
         }
 
         const updateComputedSize = () => {
-            const avaliableHeight = window.innerHeight - 65;
+            const avaliableHeight = window.innerHeight - 79;
             computedWidth.value = Math.min(1700 - 58, window.innerWidth - 58);
             computedHeight.value = avaliableHeight > 400 ? avaliableHeight : 400;
         };
@@ -239,6 +239,28 @@ export default {
     border: 1px solid #ddd;
     position: relative;
     margin: 0 auto;
+}
+
+.styled-select {
+    padding: 5px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    color: #333;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.styled-select:hover {
+    background-color: #e6f7ff;
+    border-color: #66afe9;
+}
+
+.styled-select:focus {
+    outline: none;
+    background-color: #f5fcff;
+    border-color: #66afe9;
 }
 
 .controls {
