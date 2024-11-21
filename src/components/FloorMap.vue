@@ -17,7 +17,10 @@
     <div class="map-container">
         <v-stage ref="stage"
             :config="{ width: computedWidth, height: computedHeight, draggable: true, scale: { x: scale, y: scale } }"
-            @wheel="handleZoom">
+            @wheel="handleZoom"
+            @touchstart="handleTouchStart"
+            @touchmove="handleTouchMove"
+            @touchend="handleTouchEnd">
             <v-layer>
                 <!-- отрисовка заливки корпуса -->
                 <v-line v-for="(building, index) in filteredBuildings" :key="index" :points="building.points" :config="{
@@ -78,6 +81,50 @@ export default {
         const classrooms = ref([]);
         const computedWidth = ref(800);
         const computedHeight = ref(600);
+
+        let initialDistance = null;
+        let initialScale = 1;
+
+        const handleTouchStart = (event) => {
+            if (event.touches && event.touches.length === 2) {
+                const touch1 = event.touches[0];
+                const touch2 = event.touches[1];
+                if (touch1 && touch2) {
+                    initialDistance = getDistance(touch1, touch2);
+                    initialSize = scale.value;
+                }
+            }
+        };
+
+        const handleTouchMove = (event) => {
+            if (event.touches && event.touches.length === 2 && initialDistance != null) {
+                const touch1 = event.touches[0];
+                const touch2 = event.touches[1];
+                if (touch1 && touch2) {
+                    const newDistance = getDistance(touch1, touch2);
+                    const scaleFactor = newDistance / initialDistance;
+                    const newScale = initialScale * scaleFactor;
+                    scale.value = Math.max(0.5, Math.min(newScale, 3));
+                    const stage = event.target.getStage();
+                    stage.scale({ x: scale.value, y: scale.value });
+                    stage.batchDraw();
+                }
+                
+            }
+        };
+
+        const handleTouchEnd = () => {
+            initialDistance = null;
+        };
+
+        const getDistance = (touch1, touch2) => {
+            if (touch1 && touch2) {
+                const dx = touch2.clientX - touch1.clientX;
+                const dy = touch2.clientY - touch1.clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+            return 0;
+        };
 
         const getFillColor = (name) => {
             if (name.includes("Лестница"))
@@ -217,6 +264,9 @@ export default {
             buildings,
             classrooms,
             handleZoom,
+            handleTouchStart,
+            handleTouchMove,
+            handleTouchEnd,
             getFillColor,
             computedWidth,
             computedHeight,
