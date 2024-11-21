@@ -289,6 +289,7 @@ export default {
     border: 1px solid #ddd;
     position: relative;
     margin: 0 auto;
+    touch-action: none;
 }
 
 .styled-select {
