@@ -62,49 +62,33 @@ export default {
     methods: {
         async fetchClassrooms() {
             try {
-                const response = await axios.get(`/rooms/buildingId/${this.buildingId}`, {
-                    responseType: 'text'
+                axios.get(`/rooms/buildingId/${this.buildingId}`).then(res => {
+                    this.classrooms = res.data.map((el) => ({
+                        id: el.Id,
+                        name: el.Name,
+                        floor: el.Floor,
+                        number: el.Number,
+                    }));
+                    this.filteredClassrooms = this.classrooms;
+                    this.extractFloors();
                 });
-
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(response.data, 'application/xml');
-                const roomElements = xmlDoc.getElementsByTagName('Room');
-
-                this.classrooms = Array.from(roomElements).map((el) => ({
-                    id: el.getElementsByTagName('Id')[0].textContent,
-                    name: el.getElementsByTagName('Name')[0].textContent,
-                    floor: el.getElementsByTagName('Floor')[0].textContent,
-                    number: el.getElementsByTagName('Number')[0].textContent,
-                }));
-
-                this.filteredClassrooms = this.classrooms;
-                this.extractFloors();
             } catch (error) {
-                console.error('ошибка при загрузке аудиторий:', error);
+                console.error('что-то создает ошибки при загрузке аудиторий:', error);
             }
         },
         async fetchBuildingName() {
             try {
-                const response = await axios.get('/buildings', {
-                    responseType: 'text'
-                });
-
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(response.data, 'application/xml');
-                const buildingElements = xmlDoc.getElementsByTagName('Building');
-
-                const building = Array.from(buildingElements).find(
-                    (el) => el.getElementsByTagName('Id')[0].textContent === this.buildingId
-                );
-
-                if (building) {
-                    this.buildingName = building.getElementsByTagName('Name')[0].textContent;
-                } else {
-                    console.warn('Корпус не найден.');
-                }
+                axios.get('/buildings').then(res => {
+                    const buildingElements = res.data;
+                    const building = buildingElements.find(el => el.Id === this.buildingId);
+                    if (building) {
+                        this.buildingName = building.Name;
+                    } else {
+                        console.warn('Корпус не найден');
+                    }
+                })
             } catch (error) {
                 console.error('ошибка при получении названия корпуса: ', error);
-                // уведомление для пользователя
             }
         },
         extractFloors() {

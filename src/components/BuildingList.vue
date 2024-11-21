@@ -21,38 +21,22 @@ export default {
     async created() {
         await this.fetchBuildings();
     },
-    computed: {
-        // можно удалить, если не понадобится
-        filteredBuildings() {
-            return this.buildings.filter(building =>
-                (building.name.includes('ентральн') || building.name.includes('Учебный к')) &&
-                !building.name.includes('4') &&
-                !building.name.includes('5') &&
-                !building.name.includes('6')
-            );
-        },
-    },
     methods: {
         async fetchBuildings() {
             try {
-                const response = await axios.get('/buildings', {
-                    responseType: 'text'
-                });
-
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(response.data, 'application/xml');
-                const buildingElements = xmlDoc.getElementsByTagName('Building');
-
-                this.buildings = Array.from(buildingElements).map((el) => ({
-                    id: el.getElementsByTagName('Id')[0].textContent,
-                    name: el.getElementsByTagName('Name')[0].textContent,
-                    short_name: el.getElementsByTagName('ShortName')[0].textContent,
-                }));
+                axios.get('/buildings').then(res => 
+                    this.buildings = res.data.map((el) => ({
+                        id: el.Id,
+                        name: el.Name,
+                        short_name: el.ShortName,
+                    }))
+                );
             } catch (error) {
-                console.error('ошибка при загрузке корпусов: ', error);
+                console.error('что-то создает ошибки при загрузке корпусов: ', error);
             }
         },
         selectBuilding(buildingId) {
+            // console.log(buildingId);
             this.$emit('building-selected', buildingId);
         }
     }
