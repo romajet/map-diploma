@@ -20,6 +20,21 @@
         <!-- расписание для аудитории -->
         <div v-if="isModalOpen" class="modal">
             <h3>{{ selectedClassroomNumber }} - {{ selectedClassroomName }}</h3>
+            <div v-if="scheduleData.length" class="scheduleContainer">
+                <div v-for="(entry, index) in scheduleData" :key="index" class="scheduleDetail">
+                    <div class="time">
+                        <span class="start-time">{{ entry.start_time }}</span>
+                        <span class="end-time">{{ entry.end_time }}</span>
+                    </div>
+                    <div class="details">
+                        <div class="type" :style="{ backgroundColor: typeOfColor(entry.type) }">{{ entry.type }}</div>
+                        <div class="subject">{{ entry.subject }}</div>
+                        <div class="teacher">{{ entry.teacher }}</div>
+                        <div class="groups">{{ entry.groups }}</div>
+                    </div>
+                </div>
+            </div>
+            <p v-else>нет данных о расписании</p>
             <table v-if="scheduleData.length">
                 <thead>
                     <tr>
@@ -32,21 +47,22 @@
                 </thead>
                 <tbody>
                     <tr v-for="(entry, index) in scheduleData" :key="index">
-                        <td>{{ entry.Groups }}</td>
-                        <td>{{ entry.Period }}</td>
-                        <td>{{ entry.Subject }}</td>
-                        <td>{{ entry.Teacher }}</td>
-                        <td>{{ entry.Type }}</td>
+                        <td>{{ entry.groups }}</td>
+                        <td>{{ entry.start_time }} - {{ entry.end_time }}</td>
+                        <td>{{ entry.subject }}</td>
+                        <td>{{ entry.teacher }}</td>
+                        <td>{{ entry.type }}</td>
                     </tr>
                 </tbody>
             </table>
-            <p v-else>нет данных о расписании на сегодня</p>
+            <!-- <p v-else>нет данных о расписании на сегодня</p> -->
             <button class="close-button" @click="closeModal">закрыть</button>
         </div>
 
         <!-- контейнер для svg -->
         <svg :width="computedWidth" :height="computedHeight" @wheel="handleZoom" @mousedown="startPan"
-            @mousemove="panMap" @mouseup="endPan">
+            @mousemove="panMap" @mouseup="endPan" @touchstart="handleTouchStart" @touchmove="handleTouchMove"
+            @touchend="handleTouchEnd">
             <!-- группа для масштабирования и панорамирования -->
             <g :transform="'translate(' + panX + ', ' + panY + ') scale(' + scale + ')'">
                 <!-- отрисовка корпуса -->
@@ -73,7 +89,7 @@
 </template>
 
 <script>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import axios from "../axios";
 
 export default {
@@ -110,6 +126,22 @@ export default {
 
         let isDragging = false;
         let dragThreshold = 5; // порог перемещения в пикселях для отмены нажатия
+
+        let initialTouchDistance = null;
+        let initialScale = 1;
+
+        const typeOfColor = (type) => {
+            if (type.includes('Практические')) {
+                return '#ff8f00';
+            }
+            if (type.includes('Лабораторные')) {
+                return '#3e8470';
+            }
+            if (type.includes('Лекции')) {
+                return '#276093';
+            }
+            return '#efa';
+        }
 
         // Форматирование точек для SVG-полигона
         const formatPoints = (points) => {
@@ -151,8 +183,7 @@ export default {
             return (Math.min(...yCoords) + Math.max(...yCoords)) / 2;
         };
 
-        // Масштабирование относительно мыши (надо править, оно не адаптировано под изменение размеров экрана, можно в
-        //                                    прошлом файле посмотреть, как там это сделано)
+        // Масштабирование относительно мыши
         const handleZoom = (event) => {
             event.preventDefault();
             const scaleBy = 1.1;
@@ -161,11 +192,12 @@ export default {
             const oldScale = scale.value;
             const newScale = Math.max(0.5, Math.min(oldScale * (direction > 0 ? scaleBy : 1 / scaleBy), 3));
 
-            const mouseX = event.clientX - panX.value;
-            const mouseY = event.clientY - panY.value;
+            const rect = event.currentTarget.getBoundingClientRect();
+            const mouseX = (event.clientX - rect.left - panX.value) / oldScale;
+            const mouseY = (event.clientY - rect.top - panY.value) / oldScale;
 
-            panX.value -= (mouseX / oldScale) * (newScale - oldScale);
-            panY.value -= (mouseY / oldScale) * (newScale - oldScale);
+            panX.value -= (mouseX * newScale - mouseX * oldScale);
+            panY.value -= (mouseY * newScale - mouseY * oldScale);
 
             scale.value = newScale;
         };
@@ -177,9 +209,6 @@ export default {
             startX.value = event.clientX - panX.value;
             startY.value = event.clientY - panY.value;
         };
-
-        // перемещение на сенсорном экране пока отсутствует, к среде будет (наверное)
-
 
         // Панорамирование карты
         const panMap = (event) => {
@@ -202,14 +231,69 @@ export default {
             isPanning.value = false;
         };
 
-        // Обработка клика по аудитории
+        // Обработка клика и касания по аудитории
         const handleClassroomClick = (classroom) => {
             if (!isDragging) {
-                console.log("Нажата аудитория:", classroom);
+                // console.log("Нажата аудитория:", classroom);
                 fetchSchedule(classroom);
             } else {
                 console.log("Перемещение карты, нажатие на аудиторию отменено");
             }
+        };
+
+        // Начало взаимодействия с сенсорным экраном
+        const handleTouchStart = (event) => {
+            if (event.touches.length === 2) {
+                // Если два пальца касаются экрана, начинаем жест масштабирования
+                const touch1 = event.touches[0];
+                const touch2 = event.touches[1];
+                initialTouchDistance = getDistanceBetweenTouches(touch1, touch2);
+                initialScale = scale.value;
+            } else if (event.touches.length === 1) {
+                // Если один палец касается экрана, начинаем перетаскивание
+                isPanning.value = true;
+                startX.value = event.touches[0].clientX - panX.value;
+                startY.value = event.touches[0].clientY - panY.value;
+            }
+        };
+
+        // Обработка движения касания
+        const handleTouchMove = (event) => {
+            if (event.touches.length === 2 && initialTouchDistance != null) {
+                // Жест масштабирования двумя пальцами
+                const touch1 = event.touches[0];
+                const touch2 = event.touches[1];
+                const currentDistance = getDistanceBetweenTouches(touch1, touch2);
+                const scaleFactor = currentDistance / initialTouchDistance;
+                const newScale = Math.max(0.5, Math.min(initialScale * scaleFactor, 3));
+
+                // Центрирование масштабирования
+                const rect = event.currentTarget.getBoundingClientRect();
+                const centerX = (touch1.clientX + touch2.clientX) / 2 - rect.left - panX.value;
+                const centerY = (touch1.clientY + touch2.clientY) / 2 - rect.top - panY.value;
+
+                panX.value -= (centerX / scale.value) * (newScale - scale.value);
+                panY.value -= (centerY / scale.value) * (newScale - scale.value);
+
+                scale.value = newScale;
+            } else if (event.touches.length === 1 && isPanning.value) {
+                // Перетаскивание одним пальцем
+                panX.value = event.touches[0].clientX - startX.value;
+                panY.value = event.touches[0].clientY - startY.value;
+            }
+        };
+
+        // Завершение сенсорного взаимодействия
+        const handleTouchEnd = () => {
+            initialTouchDistance = null;
+            isPanning.value = false;
+        };
+
+        // Вспомогательная функция для вычисления расстояния между двумя касаниями
+        const getDistanceBetweenTouches = (touch1, touch2) => {
+            const dx = touch2.clientX - touch1.clientX;
+            const dy = touch2.clientY - touch1.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
         };
 
         // Цвет для аудиторий по названию
@@ -227,8 +311,34 @@ export default {
             selectedClassroomName.value = classroom.name;
             selectedClassroomNumber.value = classroom.number;
             isModalOpen.value = true;
+
             axios.get(`/schedule/roomId/${classroom.id}`).then(res => {
-                scheduleData.value = res.data;
+                // console.log(res.data);
+                // scheduleData.value = res.data;
+                scheduleData.value = res.data.map(el => {
+                    const [startTime, endTime] = el.Period.split('-');
+                    let Type = 'undefined';
+                    switch (el.Type) {
+                        case "лек.":
+                            Type = "Лекции";
+                            break;
+                        case "лаб.":
+                            Type = "Лабораторные занятия";
+                            break;
+                        case 'практ.зан.  и семин.':
+                            Type = "Практические занятия и семинары";
+                            break;
+                    }
+                    return {
+                        groups: el.Groups,
+                        id: el.Id,
+                        start_time: startTime.trim().slice(0, 5),
+                        end_time: endTime.trim().slice(0, 5),
+                        subject: el.Subject,
+                        teacher: el.Teacher,
+                        type: Type
+                    };
+                });
             }).catch(error => {
                 console.error('что-то создает ошибки при загрузке расписания:', error);
                 scheduleData.value = [];
@@ -395,6 +505,12 @@ export default {
 
             fetchSchedule,
             closeModal,
+
+            handleTouchStart,
+            handleTouchMove,
+            handleTouchEnd,
+
+            typeOfColor,
         };
     },
 };
@@ -447,6 +563,7 @@ export default {
 }
 
 table {
+    margin-top: 20px;
     width: 100%;
     border-collapse: collapse;
 }
@@ -460,5 +577,68 @@ td {
 th {
     background-color: #f2f2f2;
     text-align: left;
+}
+
+.scheduleDetail {
+    display: flex;
+    flex-wrap: wrap;
+    background-color: #fcfeff;
+    border: 1px solid #cbd2da;
+    padding: 10px;
+    margin: 0;
+}
+
+.time {
+    flex: 1 1 50px;
+    display: flex;
+    justify-content: space-between;
+    background-color: #f5f5f5;
+    color: #275886;
+    font-weight: bold;
+    margin-right: 10px;
+    padding: 5px;
+}
+
+.details {
+    flex: 3 1 300px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.type {
+    flex: 0 1 200px;
+    background-color: #276093;
+    color: #fff;
+    padding: 5px 10px;
+    margin-right: 10px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.subject {
+    flex: 2 1 200px;
+    font-size: 16px;
+    color: #525252;
+    margin-bottom: 5px;
+    margin-right: 10px;
+}
+
+.teacher {
+    flex: 2 1 100px;
+    font-size: 14px;
+    color: #666767;
+    margin-bottom: 5px;
+}
+
+.groups {
+    flex: 1 1 100px;
+    font-size: 14px;
+    color: #666767;
+    text-align: center;
+}
+
+.plus {
+    margin-bottom: 20px;
 }
 </style>
