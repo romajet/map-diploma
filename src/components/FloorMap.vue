@@ -1,3 +1,4 @@
+<!-- src/components/FloorMap.vue -->
 <template>
     <div class="controls">
         <!-- селектор корпуса -->
@@ -150,7 +151,8 @@ export default {
             return (Math.min(...yCoords) + Math.max(...yCoords)) / 2;
         };
 
-        // Масштабирование относительно мыши
+        // Масштабирование относительно мыши (надо править, оно не адаптировано под изменение размеров экрана, можно в
+        //                                    прошлом файле посмотреть, как там это сделано)
         const handleZoom = (event) => {
             event.preventDefault();
             const scaleBy = 1.1;
@@ -403,6 +405,7 @@ export default {
     border: 1px solid #ddd;
     position: relative;
     overflow: hidden;
+    touch-action: none;
 }
 
 .overlay {
@@ -441,5 +444,21 @@ export default {
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+th {
+    background-color: #f2f2f2;
+    text-align: left;
 }
 </style>
