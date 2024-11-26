@@ -559,7 +559,7 @@ export default {
 .controls {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
 }
 
 table {
@@ -582,16 +582,18 @@ th {
 .scheduleDetail {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     background-color: #fcfeff;
     border: 1px solid #cbd2da;
     padding: 10px;
-    margin: 0;
+    margin: -1px;
 }
 
 .time {
     flex: 1 1 50px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
     background-color: #f5f5f5;
     color: #275886;
     font-weight: bold;
