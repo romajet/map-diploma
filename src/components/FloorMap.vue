@@ -14,7 +14,7 @@
             </option>
         </select>
     </div>
-    <div class="map-container">
+    <div class="modal-container">
         <!-- затемнение фона -->
         <div v-if="isModalOpen" class="overlay" @click="closeModal"></div>
         <!-- расписание для аудитории -->
@@ -58,7 +58,8 @@
             <!-- <p v-else>нет данных о расписании на сегодня</p> -->
             <button class="close-button" @click="closeModal">закрыть</button>
         </div>
-
+    </div>
+    <div class="map-container">
         <!-- контейнер для svg -->
         <svg :width="computedWidth" :height="computedHeight" @wheel="handleZoom" @mousedown="startPan"
             @mousemove="panMap" @mouseup="endPan" @touchstart="handleTouchStart" @touchmove="handleTouchMove"
@@ -77,7 +78,8 @@
                         stroke-width="1" />
                     <!-- текст по центру аудитории -->
                     <text :x="calculateTextX(classroom)" :y="calculateTextY(classroom)" text-anchor="middle"
-                        alignment-baseline="middle" font-size="14" font-family="Arial" fill="black">
+                        alignment-baseline="middle" font-size="14" font-family="Arial" fill="black"
+                        style="user-select: none;">
                         {{ classroom.number }}
                     </text>
                     <polygon :points="formatPoints(classroom.points)" :fill-opacity="0" stroke-opacity="0"
