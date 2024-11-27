@@ -2,13 +2,13 @@
 <template>
     <div class="controls">
         <!-- селектор корпуса -->
-        <select v-model="selectedBuilding" @change="onBuildingChange" class="styled-select">
+        <select v-model="selectedBuilding" @change="onBuildingChange" class="styled-select building-select">
             <option v-for="building in buildings" :key="building.buildingId" :value="building.buildingId">
-                {{ building.name }} ({{ building.shortname }})
+                {{ building.shortname }} - {{ building.name }}
             </option>
         </select>
         <!-- селектор этажа если выбран корпус -->
-        <select v-model="selectedFloor" @change="onFloorChange" class="styled-select">
+        <select v-model="selectedFloor" @change="onFloorChange" class="styled-select floor-select">
             <option v-for="floor in avaliableFloors" :key="floor" :value="floor">
                 Этаж {{ floor }}
             </option>
@@ -140,7 +140,7 @@ export default {
             if (type.includes('Лекции')) {
                 return '#276093';
             }
-            return '#efa';
+            return '#3f79b1';
         }
 
         // Форматирование точек для SVG-полигона
@@ -317,7 +317,7 @@ export default {
                 // scheduleData.value = res.data;
                 scheduleData.value = res.data.map(el => {
                     const [startTime, endTime] = el.Period.split('-');
-                    let Type = 'undefined';
+                    let Type = '-';
                     switch (el.Type) {
                         case "лек.":
                             Type = "Лекции";
@@ -339,6 +339,11 @@ export default {
                         type: Type
                     };
                 });
+                scheduleData.value.sort((a, b) => {
+                    const timeA = new Date(`1970-01-01T${a.start_time}:00`).getTime();
+                    const timeB = new Date(`1970-01-01T${b.start_time}:00`).getTime();
+                    return timeA - timeB;
+                })
             }).catch(error => {
                 console.error('что-то создает ошибки при загрузке расписания:', error);
                 scheduleData.value = [];
@@ -531,7 +536,7 @@ export default {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 10;
+    z-index: 20;
 }
 
 .modal {
@@ -541,8 +546,24 @@ export default {
     transform: translate(-50%, -50%);
     background-color: white;
     padding: 20px;
-    border-radius: 8px;
-    z-index: 20;
+    z-index: 30;
+    max-width: 1024px;
+    width: 90%;
+    box-sizing: border-box;
+    max-height: 80vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+@media (max-width: 650px) {
+    .modal {
+        top: 10%;
+        left: 50%;
+        transform: translate(-50%, 0);
+        width: 90%;
+        padding: 15px;
+        max-height: 90vh;
+    }
 }
 
 .close-button {
@@ -557,9 +578,44 @@ export default {
 }
 
 .controls {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     gap: 10px;
-    margin-bottom: 18px;
+    z-index: 20;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+
+.styled-select {
+    padding: 5px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    color: #333;
+    cursor: pointer;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 120px;
+}
+
+.styled-select:hover {
+    background-color: #e6f7ff;
+    border-color: #66afe9;
+}
+
+.styled-select:focus {
+    outline: none;
+    background-color: #f5fcff;
+    border-color: #66afe9;
+}
+
+.styled-select option {
+    text-overflow: ellipsis;
 }
 
 table {
@@ -638,9 +694,5 @@ th {
     font-size: 14px;
     color: #666767;
     text-align: center;
-}
-
-.plus {
-    margin-bottom: 20px;
 }
 </style>
