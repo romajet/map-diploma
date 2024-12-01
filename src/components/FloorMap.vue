@@ -1,6 +1,7 @@
 <!-- src/components/FloorMap.vue -->
 <template>
     <div class="controls">
+        <button @click="goToHome" class="home-button">Дом</button>
         <!-- селектор корпуса -->
         <select v-model="selectedBuilding" @change="onBuildingChange" class="styled-select building-select">
             <option v-for="building in buildings" :key="building.buildingId" :value="building.buildingId">
@@ -13,6 +14,8 @@
                 Этаж {{ floor }}
             </option>
         </select>
+        <!-- центрирование -->
+        <button @click="centerMap" class="center-button">Центр.</button>
     </div>
     <div class="modal-container">
         <!-- затемнение фона -->
@@ -93,6 +96,7 @@
 <script>
 import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import axios from "../axios";
+import router from '@/router';
 
 export default {
     name: "FloorMap",
@@ -122,8 +126,8 @@ export default {
         const scheduleData = ref([]);
 
         const selectedBuilding = ref(null);
-        const selectedBuildingShortName = ref(null);
-        const selectedFloor = ref(null);
+        const selectedBuildingShortName = ref('');
+        const selectedFloor = ref(1);
         const avaliableFloors = ref([]);
 
         let isDragging = false;
@@ -131,6 +135,10 @@ export default {
 
         let initialTouchDistance = null;
         let initialScale = 1;
+
+        const goToHome = () => {
+            router.push({ name: 'BuildingList' });
+        };
 
         const typeOfColor = (type) => {
             if (type.includes('Практические')) {
@@ -298,6 +306,31 @@ export default {
             return Math.sqrt(dx * dx + dy * dy);
         };
 
+        // центрирование корпуса
+        const centerMap = () => {
+            let targetPoints = [];
+
+            if (filteredBuildings.value[0]?.points?.length) {
+                targetPoints = filteredBuildings.value[0].points;
+            }
+            else if (filteredClassrooms.value.length) {
+                targetPoints = filteredClassrooms.value.flatMap((classroom) => classroom.points);
+            }
+
+            if (targetPoints.length) {
+                const xCoords = targetPoints.map((p) => p.x);
+                const yCoords = targetPoints.map((p) => p.y);
+
+                const centerX = (Math.min(...xCoords) + Math.max(...xCoords)) / 2;
+                const centerY = (Math.min(...yCoords) + Math.max(...yCoords)) / 2;
+
+                panX.value = computedWidth.value / 2 - centerX * scale.value;
+                panY.value = computedHeight.value / 2 - centerY * scale.value;
+            } else {
+                console.warn("нет данных для центрирования");
+            }
+        };
+
         // Цвет для аудиторий по названию
         const getFillColor = (name) => {
             if (name) {
@@ -309,6 +342,7 @@ export default {
             return "lightblue";
         };
 
+        // получение расписания
         const fetchSchedule = (classroom) => {
             selectedClassroomName.value = classroom.name;
             selectedClassroomNumber.value = classroom.number;
@@ -357,26 +391,20 @@ export default {
             scheduleData.value = [];
         };
 
-        // получение данных из АПИ
-        const fetchBuildings = () => {
-            axios.get('/buildings').then(res => {
-                buildings.value = res.data.
-                    map((el) => ({
-                        buildingId: el.Id,
-                        name: el.Name,
-                        shortname: el.ShortName,
-                    }));
-                if (buildings.value.length > 0) {
-                    // пока вбиты данные восточного крыла, так как только они готовы
-                    // selectedBuilding.value = buildings.value[0].buildingId;
-                    // selectedBuildingShortName.value = buildings.value[0].shortname;
-                    selectedBuilding.value = "bce65150-c95a-40cb-a59e-9774f5e1b249";
-                    selectedBuildingShortName.value = "1";
-                    onBuildingChange();
-                }
-            }).catch(error => {
+        const fetchBuildings = async () => {
+            try {
+                const res = await axios.get('/buildings');
+                buildings.value = res.data.map((el) => ({
+                    buildingId: el.Id,
+                    name: el.Name,
+                    shortname: el.ShortName
+                }));
+                selectedBuilding.value = buildings.value[0].buildingId;
+                selectedBuildingShortName.value = buildings.value[0].shortname;
+                onBuildingChange();
+            } catch (error) {
                 console.error('что-то создает ошибки загрузки корпусов: ', error);
-            });
+            }
         };
 
         const onBuildingChange = async () => {
@@ -384,58 +412,115 @@ export default {
                 classrooms.value = [];
                 filteredClassrooms.value = [];
                 avaliableFloors.value = [];
-                await fetchBuildingCoordinates(selectedBuilding.value);
+                filteredBuildings.value = [];
+
+                const selectedBuildingInfo = buildings.value.find(
+                    (building) => building.buildingId === selectedBuilding.value
+                );
+                // console.log("selectedBuildingInfo onBuildingChange", selectedBuildingInfo);
+                selectedBuildingShortName.value = selectedBuildingInfo.shortname;
+
+                const hasCoords = await fetchBuildingCoordinates(selectedBuilding.value);
+                if (hasCoords) {
+                    console.warn("координат у корпуса нет, зачистка отрисовки");
+                    buildings.value = buildings.value.map((building) =>
+                        building.buildingId === selectedBuilding.value
+                            ? { ...building, points: [] }
+                            : building
+                    );
+                }
+
                 await fetchClassrooms(selectedBuilding.value);
+
                 if (avaliableFloors.value.length > 0) {
-                    selectedFloor.value = selectedFloor.value || avaliableFloors.value[0];
+                    selectedFloor.value = avaliableFloors.value[0];
                 } else {
+                    console.warn('нет этажей у корпуса');
                     selectedFloor.value = null;
                 }
+
+                // console.log("availableFloors onBuildingChange", avaliableFloors.value);
+                // console.log("selectedFloor onBuildingChange", selectedFloor.value);
+                updateUrlParams();
                 filterClassrooms();
             }
         };
 
-        const fetchBuildingCoordinates = (buildingId) => {
-            axios.get(`/buildingcoordinates/buildingId/${buildingId}/floor/1`).then(res => {
+        const onFloorChange = () => {
+            filterClassrooms();
+            updateUrlParams();
+        };
+
+        const fetchBuildingCoordinates = async (buildingId) => {
+            try {
+                const res = await axios.get(`/buildingcoordinates/buildingId/${buildingId}/floor/1`);
                 const buildingData = res.data ? JSON.parse(res.data) : null;
+
                 if (buildingData && Array.isArray(buildingData.points)) {
-                    buildings.value = buildings.value.map(building => {
+                    buildings.value = buildings.value.map((building) => {
                         if (building.buildingId === buildingId) {
                             return {
                                 ...building,
-                                points: buildingData.points,
+                                points: buildingData.points
                             };
                         }
                         return building;
                     });
                     filteredBuildings.value = buildings.value.filter(building => building.buildingId === selectedBuilding.value);
+                    return true;
                 } else {
                     console.warn("Неверные данные для координат корпуса:", buildingData);
+                    return false;
                 }
-            }).catch(error => {
+            } catch (error) {
                 console.error('что-то создает ошибки загрузки координат корпусов: ', error);
-            });
+            }
         };
 
-        const fetchClassrooms = (buildingId) => {
-            axios.get(`rooms/buildingId/${buildingId}`).then(res => {
-                classrooms.value = res.data.map(el => ({
-                    id: el.Id,
-                    name: el.Name,
-                    floor: el.Floor,
-                    number: el.Number + "/" + selectedBuildingShortName.value,
-                    points: el.Coordinates
-                        ? JSON.parse(el.Coordinates.slice(1, -1)).points
-                        : [],
-                    buildingId
-                }));
-                classrooms.value = classrooms.value.filter(classroom => Array.isArray(classroom.points) && classroom.points.length > 0);
-                filteredClassrooms.value = classrooms.value;
-                extractFloors();
-            }).catch(error => {
-                console.error('что-то создает ошибки загрузки аудиторий: ', error);
-            });
+        function generateCoordinates(index) {
+            const row = Math.floor(index / 8);
+            const col = index % 8;
+            const size = 100;
+            const gap = 10;
+
+            const x = col * (size + gap);
+            const y = row * (size + gap);
+
+            return [
+                { x: x, y: y },
+                { x: x + size, y: y },
+                { x: x + size, y: y + size },
+                { x: x, y: y + size }
+            ];
         };
+
+        const fetchClassrooms = async (buildingId) => {
+            try {
+                const res = await axios.get(`rooms/buildingId/${buildingId}`);
+                classrooms.value = res.data.map((el, index) => {
+                    const coords = el.Coordinates
+                        ? JSON.parse(el.Coordinates.slice(1, -1)).points
+                        : generateCoordinates(index);
+                    return {
+                        id: el.Id,
+                        name: el.Name,
+                        floor: el.Floor,
+                        number: el.Number + "/" + selectedBuildingShortName.value,
+                        points: coords,
+                        // points: el.Coordinates
+                        //     ? JSON.parse(el.Coordinates.slice(1, -1)).points
+                        //     : [],
+                        buildingId
+                    }
+                });
+                classrooms.value = classrooms.value.filter(
+                    (classroom) => Array.isArray(classroom.points) && classroom.points.length > 0
+                );
+                extractFloors();
+            } catch (error) {
+                console.error('что-то создает ошибки загрузки аудиторий: ', error);
+            }
+        }
 
         // получение этажей выбранного корпуса
         const extractFloors = () => {
@@ -445,17 +530,27 @@ export default {
                         .filter(room => room.buildingId === selectedBuilding.value)
                         .map(room => room.floor)
                 );
-                avaliableFloors.value = Array.from(floorsSet).sort((a, b) => a - b);
+                // avaliableFloors.value = Array.from(floorsSet).sort((a, b) => a - b);
+                avaliableFloors.value = Array.from(floorsSet)
+                    .filter(floor => floor !== undefined && floor !== null)
+                    .sort((a, b) => a - b);
+                // console.log("extractFloors availableFloors", avaliableFloors.value);
+
+                if (avaliableFloors.value.length > 0) {
+                    selectedFloor.value = avaliableFloors.value[0];
+                }
             }
         };
 
         // фильтрация аудиторий по выбранному этажу
         const filterClassrooms = () => {
-            if (selectedBuilding.value && selectedFloor.value) {
+            if (selectedBuilding.value && selectedFloor.value !== null) {
                 filteredClassrooms.value = classrooms.value.filter(room =>
                     room.buildingId === selectedBuilding.value && room.floor === selectedFloor.value
                 );
             } else {
+                // console.log("selectedBuilding filterClassrooms", selectedBuilding.value);
+                // console.log("selectedFloor filterClassrooms", selectedFloor.value);
                 filteredClassrooms.value = [];
             }
         };
@@ -467,11 +562,32 @@ export default {
             computedHeight.value = avaliableHeight > 400 ? avaliableHeight : 400;
         };
 
+        const updateUrlParams = () => {
+            const query = {
+                korpus: selectedBuilding.value,
+                floor: selectedFloor.value
+            };
+            router.replace({ query });
+        };
+
         // что будет после монтирования компонента
-        onMounted(() => {
+        onMounted(async () => {
             updateComputedSize();
             window.addEventListener('resize', updateComputedSize);
-            fetchBuildings();
+
+            await fetchBuildings();
+
+            const { korpus, floor } = router.currentRoute.value.query;
+
+            if (korpus) {
+                selectedBuilding.value = korpus;
+                await onBuildingChange();
+                selectedFloor.value = avaliableFloors.value.includes(Number(floor))
+                    ? Number(floor)
+                    : avaliableFloors.value[0];
+                filterClassrooms();
+                updateUrlParams();
+            }
         });
 
         // что будет прямо перед монтированием компонента
@@ -500,6 +616,8 @@ export default {
             selectedClassroomNumber,
 
             // методы
+            goToHome,
+
             formatPoints,
             calculateTextX,
             calculateTextY,
@@ -512,6 +630,11 @@ export default {
 
             fetchSchedule,
             closeModal,
+
+            centerMap,
+
+            onBuildingChange,
+            onFloorChange,
 
             handleTouchStart,
             handleTouchMove,

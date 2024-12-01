@@ -17,7 +17,7 @@ const routes = [
     props: true,
   },
   {
-    path: "/test-map-view",
+    path: "/map",
     name: "floorMap",
     component: FloorMapView,
   },
