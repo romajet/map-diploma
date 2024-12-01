@@ -557,8 +557,10 @@ export default {
 
         // размер карты в зависимости от размера окна сайта (нужны правки, но за допуск точно не вылезает)
         const updateComputedSize = () => {
-            const avaliableHeight = window.innerHeight - 79;
-            computedWidth.value = Math.min(1700 - 12, window.innerWidth - 56);
+            const headerOffset = 16;
+            const containerPadding = 2;
+            const avaliableHeight = window.innerHeight - headerOffset - containerPadding;
+            computedWidth.value = Math.min(1700, window.innerWidth - containerPadding - headerOffset);
             computedHeight.value = avaliableHeight > 400 ? avaliableHeight : 400;
         };
 
@@ -652,6 +654,14 @@ export default {
     position: relative;
     overflow: hidden;
     touch-action: none;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.map-container svg {
+    flex: 1;
+    height: 100%;
 }
 
 .overlay {
