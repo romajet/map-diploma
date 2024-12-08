@@ -1,95 +1,86 @@
 <!-- src/components/FloorMap.vue -->
 <template>
-    <div class="controls">
-        <button @click="goToHome" class="home-button">Дом</button>
-        <!-- селектор корпуса -->
-        <select v-model="selectedBuilding" @change="onBuildingChange" class="styled-select building-select">
-            <option v-for="building in buildings" :key="building.buildingId" :value="building.buildingId">
-                {{ building.shortname }} - {{ building.name }}
-            </option>
-        </select>
-        <!-- селектор этажа если выбран корпус -->
-        <select v-model="selectedFloor" @change="onFloorChange" class="styled-select floor-select">
-            <option v-for="floor in avaliableFloors" :key="floor" :value="floor">
-                Этаж {{ floor }}
-            </option>
-        </select>
-        <!-- центрирование -->
-        <button @click="centerMap" class="center-button">Центр.</button>
-    </div>
-    <div class="modal-container">
-        <!-- затемнение фона -->
-        <div v-if="isModalOpen" class="overlay" @click="closeModal"></div>
-        <!-- расписание для аудитории -->
-        <div v-if="isModalOpen" class="modal">
-            <h3>{{ selectedClassroomNumber }} - {{ selectedClassroomName }}</h3>
-            <div v-if="scheduleData.length" class="scheduleContainer">
-                <div v-for="(entry, index) in scheduleData" :key="index" class="scheduleDetail">
-                    <div class="time">
-                        <span class="start-time">{{ entry.start_time }}</span>
-                        <span class="end-time">{{ entry.end_time }}</span>
-                    </div>
-                    <div class="details">
-                        <div class="type" :style="{ backgroundColor: typeOfColor(entry.type) }">{{ entry.type }}</div>
-                        <div class="subject">{{ entry.subject }}</div>
-                        <div class="teacher">{{ entry.teacher }}</div>
-                        <div class="groups">{{ entry.groups }}</div>
+    <div class="floor-map">
+        <div class="floor-map__controls">
+            <!-- возврат к списку корпусов -->
+            <button @click="goToHome" class="floor-map__button floor-map__button--home">Дом</button>
+            <!-- селектор корпуса -->
+            <select v-model="selectedBuilding" @change="onBuildingChange"
+                class="floor-map__select floor-map__select--building">
+                <option v-for="building in buildings" :key="building.buildingId" :value="building.buildingId">
+                    {{ building.shortname }} - {{ building.name }}
+                </option>
+            </select>
+            <!-- селектор этажа -->
+            <select v-if="selectedBuilding" v-model="selectedFloor" @change="onFloorChange"
+                class="floor-map__select floor-map__select--floor">
+                <option v-for="floor in avaliableFloors" :key="floor" :value="floor">
+                    Этаж {{ floor }}
+                </option>
+            </select>
+            <!-- кнопка центрирования -->
+            <button @click="centerMap" class="floor-map__button floor-map__button--center">Центр.</button>
+        </div>
+
+        <div class="floor-map__modal-container">
+            <!-- затемнение фона -->
+            <div v-if="isModalOpen" class="floor-map__overlay" @click="closeModal"></div>
+            <!-- расписание для аудитории -->
+            <div v-if="isModalOpen" class="floor-map__modal">
+                <h3 class="floor-map__modal-title">{{ selectedClassroomNumber }} - {{ selectedClassroomName }}</h3>
+                <div v-if="scheduleData.length" class="floor-map__schedule">
+                    <div v-for="(entry, index) in scheduleData" :key="index" class="floor-map__schedule-item">
+                        <div class="floor-map__schedule-time">
+                            <span class="floor-map__schedule-time-start">{{ entry.start_time }}</span>
+                            <span class="floor-map__schedule-time-end">{{ entry.end_time }}</span>
+                        </div>
+                        <div class="floor-map__schedule-details">
+                            <div class="floor-map__schedule-type" :style="{ backgroundColor: typeOfColor(entry.type) }">
+                                {{ entry.type }}</div>
+                            <div class="floor-map__schedule-subject">{{ entry.subject }}</div>
+                            <div class="floor-map__schedule-teacher">{{ entry.teacher }}</div>
+                            <div class="floor-map__schedule-groups">{{ entry.groups }}</div>
+                        </div>
                     </div>
                 </div>
+                <p v-else class="floor-map__no-schedule">нет данных о расписании</p>
+                <button class="floor-map__button floor-map__button--close" @click="closeModal">закрыть</button>
             </div>
-            <p v-else>нет данных о расписании</p>
-            <table v-if="scheduleData.length">
-                <thead>
-                    <tr>
-                        <th>группы</th>
-                        <th>время</th>
-                        <th>предмет</th>
-                        <th>преподаватель</th>
-                        <th>тип</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="(entry, index) in scheduleData" :key="index">
-                        <td>{{ entry.groups }}</td>
-                        <td>{{ entry.start_time }} - {{ entry.end_time }}</td>
-                        <td>{{ entry.subject }}</td>
-                        <td>{{ entry.teacher }}</td>
-                        <td>{{ entry.type }}</td>
-                    </tr>
-                </tbody>
-            </table>
-            <!-- <p v-else>нет данных о расписании на сегодня</p> -->
-            <button class="close-button" @click="closeModal">закрыть</button>
         </div>
-    </div>
-    <div class="map-container">
-        <!-- контейнер для svg -->
-        <svg :width="computedWidth" :height="computedHeight" @wheel="handleZoom" @mousedown="startPan"
-            @mousemove="panMap" @mouseup="endPan" @touchstart="handleTouchStart" @touchmove="handleTouchMove"
-            @touchend="handleTouchEnd">
-            <!-- группа для масштабирования и панорамирования -->
-            <g :transform="'translate(' + panX + ', ' + panY + ') scale(' + scale + ')'">
-                <!-- отрисовка корпуса -->
-                <g v-for="(building, index) in filteredBuildings" :key="index">
-                    <polygon :points="formatPoints(building.points)" :fill="building.fill || 'gray'" stroke="black"
-                        stroke-width="2" />
-                </g>
 
-                <!-- отрисовка аудиторий -->
-                <g v-for="(classroom, index) in filteredClassrooms" :key="'classroom' + index">
-                    <polygon :points="formatPoints(classroom.points)" :fill="getFillColor(classroom.name)" stroke="blue"
-                        stroke-width="1" />
-                    <!-- текст по центру аудитории -->
-                    <text :x="calculateTextX(classroom)" :y="calculateTextY(classroom)" text-anchor="middle"
-                        alignment-baseline="middle" font-size="14" font-family="Arial" fill="black"
-                        style="user-select: none;">
-                        {{ classroom.number }}
-                    </text>
-                    <polygon :points="formatPoints(classroom.points)" :fill-opacity="0" stroke-opacity="0"
-                        stroke-width="1" @click="handleClassroomClick(classroom)" />
+        <div class="floor-map__container">
+            <!-- контейнер для svg -->
+            <svg :width="computedWidth" :height="computedHeight" @wheel="handleZoom" @mousedown="startPan"
+                @mousemove="panMap" @mouseup="endPan" @touchstart="handleTouchStart" @touchmove="handleTouchMove"
+                @touchend="handleTouchEnd" class="floor-map__svg">
+                <!-- группа для масштабирования и параномирования -->
+                <g :transform="'translate(' + panX + ', ' + panY + ') scale(' + scale + ')'"
+                    class="floor-map__svg-content">
+                    <!-- отрисовка корпуса -->
+                    <g v-for="(building, index) in filteredBuildings" :key="index" class="floor-map__building">
+                        <polygon :points="formatPoints(building.points)" :fill="building.fill || 'gray'" stroke="black"
+                            stroke-width="2" class="floor-map__building-polygon" />
+                    </g>
+                    <!-- отрисовка аудиторий -->
+                    <g v-for="(classroom, index) in filteredClassrooms" :key="'classroom' + index"
+                        class="floor-map__classroom">
+                        <!-- внешний вид -->
+                        <polygon :points="formatPoints(classroom.points)" :fill="getFillColor(classroom.name)"
+                            stroke="blue" stroke-width="1" class="floor-map__classroom-polygon" />
+                        <!-- текст по центру аудитории -->
+                        <text :x="calculateTextX(classroom)" :y="calculateTextY(classroom)" text-anchor="middle"
+                            alignment-baseline="middle" font-size="14" font-family="Arial" fill="black"
+                            style="user-select: none;" class="floor-map__classroom-number">
+                            {{ classroom.number }}
+                        </text>
+                        <!-- прозрачный полигон для обработки нажатия -->
+                        <polygon :points="formatPoints(classroom.points)" fill-opacity="0" stroke-opacity="0"
+                            stroke-width="1" @click="handleClassroomClick(classroom)"
+                            class="floor-map__classroom-clickable" />
+                    </g>
                 </g>
-            </g>
-        </svg>
+            </svg>
+        </div>
     </div>
 </template>
 
@@ -649,22 +640,21 @@ export default {
 </script>
 
 <style scoped>
-.map-container {
+.floor-map__container {
     border: 1px solid #ddd;
     position: relative;
     overflow: hidden;
     touch-action: none;
-
     display: flex;
     flex-direction: column;
 }
 
-.map-container svg {
+.floor-map__svg {
     flex: 1;
     height: 100%;
 }
 
-.overlay {
+.floor-map__overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -674,7 +664,7 @@ export default {
     z-index: 20;
 }
 
-.modal {
+.floor-map__modal {
     position: fixed;
     top: 50%;
     left: 50%;
@@ -691,7 +681,7 @@ export default {
 }
 
 @media (max-width: 650px) {
-    .modal {
+    .floor-map__modal {
         top: 10%;
         left: 50%;
         transform: translate(-50%, 0);
@@ -701,18 +691,7 @@ export default {
     }
 }
 
-.close-button {
-    display: block;
-    margin-top: 10px;
-    padding: 8px 16px;
-    background-color: #2c72a5;
-    border: none;
-    color: white;
-    cursor: pointer;
-    border-radius: 4px;
-}
-
-.controls {
+.floor-map__controls {
     position: absolute;
     top: 20px;
     left: 50%;
@@ -725,7 +704,7 @@ export default {
     border-radius: 8px;
 }
 
-.styled-select {
+.floor-map__select {
     padding: 5px;
     font-size: 14px;
     border: 1px solid #ccc;
@@ -738,39 +717,18 @@ export default {
     max-width: 120px;
 }
 
-.styled-select:hover {
+.floor-map__select:hover {
     background-color: #e6f7ff;
     border-color: #66afe9;
 }
 
-.styled-select:focus {
+.floor-map__select:focus {
     outline: none;
     background-color: #f5fcff;
     border-color: #66afe9;
 }
 
-.styled-select option {
-    text-overflow: ellipsis;
-}
-
-table {
-    margin-top: 20px;
-    width: 100%;
-    border-collapse: collapse;
-}
-
-th,
-td {
-    border: 1px solid #ddd;
-    padding: 8px;
-}
-
-th {
-    background-color: #f2f2f2;
-    text-align: left;
-}
-
-.scheduleDetail {
+.floor-map__schedule-item {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -780,7 +738,7 @@ th {
     margin: -1px;
 }
 
-.time {
+.floor-map__schedule-time {
     flex: 1 1 50px;
     display: flex;
     justify-content: space-between;
@@ -792,14 +750,14 @@ th {
     padding: 5px;
 }
 
-.details {
+.floor-map__schedule-details {
     flex: 3 1 300px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
 }
 
-.type {
+.floor-map__schedule-type {
     flex: 0 1 200px;
     background-color: #276093;
     color: #fff;
@@ -809,7 +767,7 @@ th {
     text-align: center;
 }
 
-.subject {
+.floor-map__schedule-subject {
     flex: 2 1 200px;
     font-size: 16px;
     color: #525252;
@@ -817,14 +775,14 @@ th {
     margin-right: 10px;
 }
 
-.teacher {
+.floor-map__schedule-teacher {
     flex: 2 1 100px;
     font-size: 14px;
     color: #666767;
     margin-bottom: 5px;
 }
 
-.groups {
+.floor-map__schedule-groups {
     flex: 1 1 100px;
     font-size: 14px;
     color: #666767;
