@@ -127,6 +127,9 @@ export default {
         let initialTouchDistance = null;
         let initialScale = 1;
 
+        const minScale = 0.2;
+        const maxScale = 5;
+
         const goToHome = () => {
             router.push({ name: 'BuildingList' });
         };
@@ -191,7 +194,7 @@ export default {
 
             const direction = event.deltaY > 0 ? -1 : 1;
             const oldScale = scale.value;
-            const newScale = Math.max(0.5, Math.min(oldScale * (direction > 0 ? scaleBy : 1 / scaleBy), 3));
+            const newScale = Math.max(minScale, Math.min(oldScale * (direction > 0 ? scaleBy : 1 / scaleBy), maxScale));
 
             const rect = event.currentTarget.getBoundingClientRect();
             const mouseX = (event.clientX - rect.left - panX.value) / oldScale;
@@ -266,7 +269,7 @@ export default {
                 const touch2 = event.touches[1];
                 const currentDistance = getDistanceBetweenTouches(touch1, touch2);
                 const scaleFactor = currentDistance / initialTouchDistance;
-                const newScale = Math.max(0.5, Math.min(initialScale * scaleFactor, 3));
+                const newScale = Math.max(minScale, Math.min(initialScale * scaleFactor, maxScale));
 
                 // Центрирование масштабирования
                 const rect = event.currentTarget.getBoundingClientRect();
@@ -312,9 +315,25 @@ export default {
                 const xCoords = targetPoints.map((p) => p.x);
                 const yCoords = targetPoints.map((p) => p.y);
 
-                const centerX = (Math.min(...xCoords) + Math.max(...xCoords)) / 2;
-                const centerY = (Math.min(...yCoords) + Math.max(...yCoords)) / 2;
+                const minX = Math.min(...xCoords);
+                const maxX = Math.max(...xCoords);
+                const minY = Math.min(...yCoords);
+                const maxY = Math.max(...yCoords);
 
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+
+                const width = maxX - minX;
+                const height = maxY - minY;
+
+                const containerWidth = computedWidth.value;
+                const containerHeight = computedHeight.value;
+
+                const scaleX = containerWidth / (width + 20);
+                const scaleY = containerHeight / (height + 20);
+                const optimalScale = Math.min(scaleX, scaleY, maxScale);
+
+                scale.value = optimalScale;
                 panX.value = computedWidth.value / 2 - centerX * scale.value;
                 panY.value = computedHeight.value / 2 - centerY * scale.value;
             } else {
@@ -424,7 +443,7 @@ export default {
                 await fetchClassrooms(selectedBuilding.value);
 
                 if (avaliableFloors.value.length > 0) {
-                    selectedFloor.value = avaliableFloors.value[0];
+                    selectedFloor.value = avaliableFloors.value[0] === 0 ? avaliableFloors.value[1] : avaliableFloors.value[0];
                 } else {
                     console.warn('нет этажей у корпуса');
                     selectedFloor.value = null;
@@ -434,11 +453,13 @@ export default {
                 // console.log("selectedFloor onBuildingChange", selectedFloor.value);
                 updateUrlParams();
                 filterClassrooms();
+                centerMap();
             }
         };
 
         const onFloorChange = () => {
             filterClassrooms();
+            centerMap();
             updateUrlParams();
         };
 
@@ -579,6 +600,7 @@ export default {
                     ? Number(floor)
                     : avaliableFloors.value[0];
                 filterClassrooms();
+                centerMap();
                 updateUrlParams();
             }
         });
