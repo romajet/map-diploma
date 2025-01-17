@@ -50,33 +50,63 @@
 
         <div class="floor-map__container">
             <!-- контейнер для svg -->
-            <svg :width="computedWidth" :height="computedHeight" @wheel="handleZoom" @mousedown="startPan"
-                @mousemove="panMap" @mouseup="endPan" @touchstart="handleTouchStart" @touchmove="handleTouchMove"
-                @touchend="handleTouchEnd" class="floor-map__svg">
+            <svg
+                :width="computedWidth"
+                :height="computedHeight"
+                @wheel="handleZoom"
+                @mousedown="startPan"
+                @mousemove="panMap"
+                @mouseup="endPan"
+                @touchstart="handleTouchStart"
+                @touchmove="handleTouchMove"
+                @touchend="handleTouchEnd"
+                class="floor-map__svg">
                 <!-- группа для масштабирования и параномирования -->
                 <g :transform="'translate(' + panX + ', ' + panY + ') scale(' + scale + ')'"
                     class="floor-map__svg-content">
                     <!-- отрисовка корпуса -->
                     <g v-for="(building, index) in filteredBuildings" :key="index" class="floor-map__building">
-                        <polygon :points="formatPoints(building.points)" :fill="building.fill || 'gray'" stroke="black"
-                            stroke-width="2" class="floor-map__building-polygon" />
+                        <polygon
+                            :points="formatPoints(building.points)"
+                            :fill="building.fill || 'gray'" stroke="black"
+                            stroke-width="2"
+                            class="floor-map__building-polygon"
+                        />
                     </g>
                     <!-- отрисовка аудиторий -->
                     <g v-for="(classroom, index) in filteredClassrooms" :key="'classroom' + index"
                         class="floor-map__classroom">
                         <!-- внешний вид -->
-                        <polygon :points="formatPoints(classroom.points)" :fill="getFillColor(classroom.name)"
-                            stroke="blue" stroke-width="1" class="floor-map__classroom-polygon" />
+                        <polygon
+                            :points="formatPoints(classroom.points)"
+                            :fill="getFillColor(classroom.name)"
+                            stroke="blue"
+                            stroke-width="1"
+                            class="floor-map__classroom-polygon"
+                        />
                         <!-- текст по центру аудитории -->
-                        <text :x="calculateTextX(classroom)" :y="calculateTextY(classroom)" text-anchor="middle"
-                            alignment-baseline="middle" font-size="14" font-family="Arial" fill="black"
-                            style="user-select: none;" class="floor-map__classroom-number">
+                        <text
+                            :x="calculateText(classroom.points).x"
+							:y="calculateText(classroom.points).y"
+                            text-anchor="middle"
+                            alignment-baseline="middle"
+                            font-size="14"
+                            font-family="Arial"
+                            fill="black"
+                            style="user-select: none;"
+                            class="floor-map__classroom-number"
+                        >
                             {{ classroom.number }}
                         </text>
                         <!-- прозрачный полигон для обработки нажатия -->
-                        <polygon :points="formatPoints(classroom.points)" fill-opacity="0" stroke-opacity="0"
-                            stroke-width="1" @click="handleClassroomClick(classroom)"
-                            class="floor-map__classroom-clickable" />
+                        <polygon
+                            :points="formatPoints(classroom.points)"
+                            fill-opacity="0"
+                            stroke-opacity="0"
+                            stroke-width="1"
+                            @click="handleClassroomClick(classroom)"
+                            class="floor-map__classroom-clickable"
+                        />
                     </g>
                 </g>
             </svg>
@@ -88,6 +118,7 @@
 import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import axios from "../axios";
 import router from '@/router';
+import polylabel from "polylabel";
 
 export default {
     name: "FloorMap",
@@ -169,23 +200,27 @@ export default {
         };
 
         // Центр текста для размещения в аудитории
-        const calculateTextX = (classroom) => {
-            if (!classroom.points || classroom.points.length === 0) {
-                console.warn("Неверные данные для classroom.points:", classroom.points);
-                return 0;
-            }
-            const xCoords = classroom.points.map((p) => p.x);
-            return (Math.min(...xCoords) + Math.max(...xCoords)) / 2;
+        const calculateText = (points) => {
+            const polylabelCoordinates = points.map(point => [point.x, point.y]);
+            const centerPoint = polylabel([polylabelCoordinates], 1.0);
+            return { x: centerPoint[0], y: centerPoint[1] };
         };
-
-        const calculateTextY = (classroom) => {
-            if (!classroom.points || classroom.points.length === 0) {
-                console.warn("Неверные данные для classroom.points:", classroom.points);
-                return 0;
-            }
-            const yCoords = classroom.points.map((p) => p.y);
-            return (Math.min(...yCoords) + Math.max(...yCoords)) / 2;
-        };
+        // const calculateTextX = (classroom) => {
+        //     if (!classroom.points || classroom.points.length === 0) {
+        //         console.warn("Неверные данные для classroom.points:", classroom.points);
+        //         return 0;
+        //     }
+        //     const xCoords = classroom.points.map((p) => p.x);
+        //     return (Math.min(...xCoords) + Math.max(...xCoords)) / 2;
+        // };
+        // const calculateTextY = (classroom) => {
+        //     if (!classroom.points || classroom.points.length === 0) {
+        //         console.warn("Неверные данные для classroom.points:", classroom.points);
+        //         return 0;
+        //     }
+        //     const yCoords = classroom.points.map((p) => p.y);
+        //     return (Math.min(...yCoords) + Math.max(...yCoords)) / 2;
+        // };
 
         // Масштабирование относительно мыши
         const handleZoom = (event) => {
@@ -511,7 +546,11 @@ export default {
                 const res = await axios.get(`rooms/buildingId/${buildingId}`);
                 classrooms.value = res.data.map((el, index) => {
                     const coords = el.Coordinates
-                        ? JSON.parse(el.Coordinates.slice(1, -1)).points
+                        ? JSON.parse(
+                            el.Coordinates[0] === '"'
+                                ? el.Coordinates.slice(1, -1)
+                                : el.Coordinates
+                        ).points
                         : generateCoordinates(index);
                     return {
                         id: el.Id,
@@ -634,8 +673,9 @@ export default {
             goToHome,
 
             formatPoints,
-            calculateTextX,
-            calculateTextY,
+            // calculateTextX,
+            // calculateTextY,
+            calculateText,
             handleClassroomClick,
             handleZoom,
             startPan,
