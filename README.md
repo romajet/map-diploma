@@ -9,6 +9,7 @@ yea
 - ***[Vue.js](https://github.com/vuejs/vue) (лицензия: MIT) — прогрессивный фреймворк для построения интерфейсов.***
 - ***[Vue Router](https://github.com/vuejs/router) (лицензия: MIT) — маршрутизация для Vue.***
 - ***[axios](https://github.com/axios/axios) (лицензия: MIT) — HTTP-клиент для выполнения запросов к API.***
+- ***[polylabel](https://github.com/mapbox/polylabel) (лицензия: ISC) — вычисление центра тяжести полигонов.***
 - [core-js](https://github.com/zloirock/core-js) (лицензия: MIT) — полифиллы для обеспечения совместимости JavaScript.
 - [Konva](https://github.com/konvajs/konva) (лицензия: MIT) — библиотека для работы с 2D-графикой на canvas.
 - [Vue Konva](https://github.com/konvajs/vue-konva) (лицензия: MIT) — интеграция Konva с Vue.js.
