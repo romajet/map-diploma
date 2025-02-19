@@ -1,7 +1,6 @@
 <!-- src/views/FloorMapView.vue -->
 <template>
     <div class="floor-map-view">
-        <!-- <h1>тест интерактивной карты этажа</h1> -->
         <FloorMap :stageWidth="mapWidth" :stageHeight="600" />
     </div>
 </template>

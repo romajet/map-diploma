@@ -36,7 +36,6 @@ export default {
             }
         },
         selectBuilding(buildingId) {
-            // console.log(buildingId);
             this.$emit('building-selected', buildingId);
         }
     }

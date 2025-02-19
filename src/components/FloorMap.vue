@@ -205,22 +205,6 @@ export default {
             const centerPoint = polylabel([polylabelCoordinates], 1.0);
             return { x: centerPoint[0], y: centerPoint[1] };
         };
-        // const calculateTextX = (classroom) => {
-        //     if (!classroom.points || classroom.points.length === 0) {
-        //         console.warn("Неверные данные для classroom.points:", classroom.points);
-        //         return 0;
-        //     }
-        //     const xCoords = classroom.points.map((p) => p.x);
-        //     return (Math.min(...xCoords) + Math.max(...xCoords)) / 2;
-        // };
-        // const calculateTextY = (classroom) => {
-        //     if (!classroom.points || classroom.points.length === 0) {
-        //         console.warn("Неверные данные для classroom.points:", classroom.points);
-        //         return 0;
-        //     }
-        //     const yCoords = classroom.points.map((p) => p.y);
-        //     return (Math.min(...yCoords) + Math.max(...yCoords)) / 2;
-        // };
 
         // Масштабирование относительно мыши
         const handleZoom = (event) => {
@@ -394,8 +378,6 @@ export default {
             isModalOpen.value = true;
 
             axios.get(`/schedule/roomId/${classroom.id}`).then(res => {
-                // console.log(res.data);
-                // scheduleData.value = res.data;
                 scheduleData.value = res.data.map(el => {
                     const [startTime, endTime] = el.Period.split('-');
                     let Type = '-';
@@ -462,7 +444,6 @@ export default {
                 const selectedBuildingInfo = buildings.value.find(
                     (building) => building.buildingId === selectedBuilding.value
                 );
-                // console.log("selectedBuildingInfo onBuildingChange", selectedBuildingInfo);
                 selectedBuildingShortName.value = selectedBuildingInfo.shortname;
 
                 const hasCoords = await fetchBuildingCoordinates(selectedBuilding.value);
@@ -484,8 +465,6 @@ export default {
                     selectedFloor.value = null;
                 }
 
-                // console.log("availableFloors onBuildingChange", avaliableFloors.value);
-                // console.log("selectedFloor onBuildingChange", selectedFloor.value);
                 updateUrlParams();
                 filterClassrooms();
                 centerMap();
@@ -524,23 +503,6 @@ export default {
             }
         };
 
-        function generateCoordinates(index) {
-            const row = Math.floor(index / 8);
-            const col = index % 8;
-            const size = 100;
-            const gap = 10;
-
-            const x = col * (size + gap);
-            const y = row * (size + gap);
-
-            return [
-                { x: x, y: y },
-                { x: x + size, y: y },
-                { x: x + size, y: y + size },
-                { x: x, y: y + size }
-            ];
-        };
-
         const fetchClassrooms = async (buildingId) => {
             try {
                 const res = await axios.get(`rooms/buildingId/${buildingId}`);
@@ -551,16 +513,13 @@ export default {
                                 ? el.Coordinates.slice(1, -1)
                                 : el.Coordinates
                         ).points
-                        : generateCoordinates(index);
+                        : null;
                     return {
                         id: el.Id,
                         name: el.Name,
                         floor: el.Floor,
                         number: el.Number + "/" + selectedBuildingShortName.value,
                         points: coords,
-                        // points: el.Coordinates
-                        //     ? JSON.parse(el.Coordinates.slice(1, -1)).points
-                        //     : [],
                         buildingId
                     }
                 });
@@ -581,11 +540,9 @@ export default {
                         .filter(room => room.buildingId === selectedBuilding.value)
                         .map(room => room.floor)
                 );
-                // avaliableFloors.value = Array.from(floorsSet).sort((a, b) => a - b);
                 avaliableFloors.value = Array.from(floorsSet)
                     .filter(floor => floor !== undefined && floor !== null)
                     .sort((a, b) => a - b);
-                // console.log("extractFloors availableFloors", avaliableFloors.value);
 
                 if (avaliableFloors.value.length > 0) {
                     selectedFloor.value = avaliableFloors.value[0];
@@ -600,8 +557,6 @@ export default {
                     room.buildingId === selectedBuilding.value && room.floor === selectedFloor.value
                 );
             } else {
-                // console.log("selectedBuilding filterClassrooms", selectedBuilding.value);
-                // console.log("selectedFloor filterClassrooms", selectedFloor.value);
                 filteredClassrooms.value = [];
             }
         };
