@@ -70,18 +70,19 @@
                 <!-- группа для масштабирования и параномирования -->
                 <g :transform="'translate(' + panX + ', ' + panY + ') scale(' + scale + ')'"
                     class="floor-map__svg-content">
-                    <!-- отрисовка корпуса -->
-                    <g v-for="(building, index) in filteredBuildings" :key="index" class="floor-map__building">
+                    <!-- отрисовка заполнения корпуса -->
+                    <g v-for="(building, index) in filteredBuildings" :key="index"
+                    class="floor-map__building">
                         <polygon
                             :points="formatPoints(building.points)"
-                            :fill="building.fill || 'gray'" stroke="black"
-                            stroke-width="2"
-                            class="floor-map__building-polygon"
+                            :fill="building.fill || 'gray'"
+                            stroke-width="0"
+                            class="floor-map__building-fill"
                         />
                     </g>
                     <!-- отрисовка аудиторий -->
                     <g v-for="(classroom, index) in filteredClassrooms" :key="'classroom' + index"
-                        class="floor-map__classroom">
+                    class="floor-map__classroom">
                         <!-- внешний вид -->
                         <polygon
                             :points="formatPoints(classroom.points)"
@@ -93,7 +94,7 @@
                         <!-- текст по центру аудитории -->
                         <text
                             :x="calculateText(classroom.points).x"
-							:y="calculateText(classroom.points).y"
+                            :y="calculateText(classroom.points).y"
                             text-anchor="middle"
                             alignment-baseline="middle"
                             font-size="14"
@@ -104,6 +105,21 @@
                         >
                             {{ classroom.number }}
                         </text>
+                    </g>
+                    <!-- отрисовка граней корпуса -->
+                    <g v-for="(building, index) in filteredBuildings" :key="index"
+                    class="floor-map__building">
+                        <polygon
+                            :points="formatPoints(building.points)"
+                            fill-opacity="0"
+                            stroke="black"
+                            stroke-width="2"
+                            class="floor-map__building-stroke"
+                        />
+                    </g>
+                    <!-- отрисовка аудиторий -->
+                    <g v-for="(classroom, index) in filteredClassrooms" :key="'classroom' + index"
+                    class="floor-map__classroom">
                         <!-- прозрачный полигон для обработки нажатия -->
                         <polygon
                             :points="formatPoints(classroom.points)"
