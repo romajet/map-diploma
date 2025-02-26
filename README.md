@@ -10,6 +10,7 @@ yea
 - ***[Vue Router](https://github.com/vuejs/router) (лицензия: MIT) — маршрутизация для Vue.***
 - ***[axios](https://github.com/axios/axios) (лицензия: MIT) — HTTP-клиент для выполнения запросов к API.***
 - ***[polylabel](https://github.com/mapbox/polylabel) (лицензия: ISC) — вычисление центра тяжести полигонов.***
+- ***[material-icons](https://github.com/marella/material-icons) (лицензия: Apache-2.0) - шрифты иконок и CSS для самостоятельного размещения иконок в стиле Material Design.***
 
 ### Development
 - ***[Vite](https://github.com/vitejs/vite) (лицензия: MIT) — быстрый сборщик для современных проектов.***

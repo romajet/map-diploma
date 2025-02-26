@@ -3,7 +3,10 @@
     <div class="floor-map">
         <div class="floor-map__controls">
             <!-- возврат к списку корпусов -->
-            <button @click="goToHome" class="floor-map__button floor-map__button--home">Дом</button>
+            <!-- <button @click="goToHome" class="floor-map__button floor-map__button--home">Дом</button> -->
+            <button @click="goToHome" class="floor-map__button floor-map__button--home" title="К выбору корпусов">
+                <span class="material-icons-outlined" style="user-select: none;">home</span>
+            </button>
             <!-- селектор корпуса -->
             <select v-model="selectedBuilding" @change="onBuildingChange"
                 class="floor-map__select floor-map__select--building">
@@ -19,7 +22,10 @@
                 </option>
             </select>
             <!-- кнопка центрирования -->
-            <button @click="centerMap" class="floor-map__button floor-map__button--center">Центр.</button>
+            <!-- <button @click="centerMap" class="floor-map__button floor-map__button--center">Центр.</button> -->
+            <button @click="centerMap" class="floor-map__button floor-map__button--center" title="Центрировать">
+                <span class="material-icons-outlined" style="user-select: none;">crop_free</span>
+            </button>
         </div>
 
         <div class="floor-map__modal-container">
