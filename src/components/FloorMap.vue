@@ -137,7 +137,7 @@
 </template>
 
 <script>
-import { ref, onMounted, onBeforeUnmount, computed } from "vue";
+import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue";
 import axios from "../axios";
 import router from '@/router';
 import polylabel from "polylabel";
@@ -178,6 +178,8 @@ export default {
         const selectedBuildingShortName = ref('');
         const selectedFloor = ref(1);
         const avaliableFloors = ref([]);
+
+        const floorDataLoaded = ref(false);
 
         let isDragging = false;
         let dragThreshold = 5; // порог перемещения в пикселях для отмены нажатия
@@ -463,6 +465,8 @@ export default {
 
         const onBuildingChange = async () => {
             if (selectedBuilding.value) {
+                floorDataLoaded.value = false;
+
                 classrooms.value = [];
                 filteredClassrooms.value = [];
                 avaliableFloors.value = [];
@@ -473,40 +477,42 @@ export default {
                 );
                 selectedBuildingShortName.value = selectedBuildingInfo.shortname;
 
-                const hasCoords = await fetchBuildingCoordinates(selectedBuilding.value);
-                if (hasCoords) {
-                    console.warn("координат у корпуса нет, зачистка отрисовки");
-                    buildings.value = buildings.value.map((building) =>
-                        building.buildingId === selectedBuilding.value
-                            ? { ...building, points: [] }
-                            : building
-                    );
-                }
-
                 await fetchClassrooms(selectedBuilding.value);
 
                 if (avaliableFloors.value.length > 0) {
-                    selectedFloor.value = avaliableFloors.value[0] === 0 ? avaliableFloors.value[1] : avaliableFloors.value[0];
+                    const { floor } = router.currentRoute.value.query;
+                    const floorNumber = Number(floor);
+
+                    if (floor && avaliableFloors.value.includes(floorNumber)) {
+                        selectedFloor.value = floorNumber;
+                    } else {
+                        selectedFloor.value = avaliableFloors.value[0] === 0 ? avaliableFloors.value[1] : avaliableFloors.value[0];
+                    }
                 } else {
-                    console.warn('нет этажей у корпуса');
+                    console.warn('у корпуса нет этажей');
                     selectedFloor.value = null;
                 }
 
                 updateUrlParams();
+                await fetchBuildingCoordinates(selectedBuilding.value, selectedFloor.value);
                 filterClassrooms();
+                floorDataLoaded.value = true;
                 centerMap();
             }
         };
 
-        const onFloorChange = () => {
-            filterClassrooms();
-            centerMap();
+        const onFloorChange = async () => {
+            floorDataLoaded.value = false;
             updateUrlParams();
+            await fetchBuildingCoordinates(selectedBuilding.value, selectedFloor.value);
+            filterClassrooms();
+            floorDataLoaded.value = true;
+            centerMap();
         };
 
-        const fetchBuildingCoordinates = async (buildingId) => {
+        const fetchBuildingCoordinates = async (buildingId, floor) => {
             try {
-                const res = await axios.get(`/buildingcoordinates/buildingId/${buildingId}/floor/1`);
+                const res = await axios.get(`/buildingcoordinates/buildingId/${buildingId}/floor/${floor}`);
                 const buildingData = res.data ? JSON.parse(res.data) : null;
 
                 if (buildingData && Array.isArray(buildingData.points)) {
@@ -527,6 +533,7 @@ export default {
                 }
             } catch (error) {
                 console.error('что-то создает ошибки загрузки координат корпусов: ', error);
+                return false;
             }
         };
 
@@ -570,10 +577,6 @@ export default {
                 avaliableFloors.value = Array.from(floorsSet)
                     .filter(floor => floor !== undefined && floor !== null)
                     .sort((a, b) => a - b);
-
-                if (avaliableFloors.value.length > 0) {
-                    selectedFloor.value = avaliableFloors.value[0];
-                }
             }
         };
 
@@ -605,6 +608,12 @@ export default {
             router.replace({ query });
         };
 
+        watch(floorDataLoaded, (newValue) => {
+            if (newValue) {
+                centerMap();
+            }
+        });
+
         // что будет после монтирования компонента
         onMounted(async () => {
             updateComputedSize();
@@ -617,12 +626,10 @@ export default {
             if (korpus) {
                 selectedBuilding.value = korpus;
                 await onBuildingChange();
-                selectedFloor.value = avaliableFloors.value.includes(Number(floor))
-                    ? Number(floor)
-                    : avaliableFloors.value[0];
-                filterClassrooms();
-                centerMap();
-                updateUrlParams();
+                if (floor && selectedFloor.value !== Number(floor)) {
+                    selectedFloor.value = Number(floor);
+                    await onFloorChange();
+                }
             }
         });
 
@@ -645,6 +652,8 @@ export default {
             classrooms,
             filteredBuildings,
             filteredClassrooms,
+
+            floorDataLoaded,
 
             isModalOpen,
             scheduleData,
