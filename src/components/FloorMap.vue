@@ -5,7 +5,7 @@
             <!-- возврат к списку корпусов -->
             <!-- <button @click="goToHome" class="floor-map__button floor-map__button--home">Дом</button> -->
             <button @click="goToHome" class="floor-map__button floor-map__button--home" title="К выбору корпусов">
-                <span class="material-icons-outlined" style="user-select: none;">home</span>
+                <IconHome />
             </button>
             <!-- селектор корпуса -->
             <select v-model="selectedBuilding" @change="onBuildingChange"
@@ -24,7 +24,7 @@
             <!-- кнопка центрирования -->
             <!-- <button @click="centerMap" class="floor-map__button floor-map__button--center">Центр.</button> -->
             <button @click="centerMap" class="floor-map__button floor-map__button--center" title="Центрировать">
-                <span class="material-icons-outlined" style="user-select: none;">crop_free</span>
+                <IconFrame />
             </button>
         </div>
 
@@ -141,9 +141,14 @@ import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import axios from "../axios";
 import router from '@/router';
 import polylabel from "polylabel";
+import { IconHome, IconFrame } from "@tabler/icons-vue";
 
 export default {
     name: "FloorMap",
+    components: {
+        IconFrame,
+        IconHome
+    },
     props: {
         stageWidth: { type: Number, default: 800 },
         stageHeight: { type: Number, default: 600 },
