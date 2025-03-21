@@ -34,14 +34,15 @@
             <!-- расписание для аудитории -->
             <div v-if="isModalOpen" class="floor-map__modal">
                 <h3 class="floor-map__modal-title">{{ selectedClassroomNumber }} - {{ selectedClassroomName }}</h3>
+                <!-- <h4 class="floor-map__modal-type">{{ selectedClassroomType }}</h4> -->
                 <div v-if="scheduleData.length" class="floor-map__schedule">
-                    <div v-for="(entry, index) in scheduleData" :key="index" class="floor-map__schedule-item">
+                    <div v-for="(entry, index) in scheduleData" :key="index" :class="['floor-map__schedule-item', getScheduleClass(entry.type)]">
                         <div class="floor-map__schedule-time">
                             <span class="floor-map__schedule-time-start">{{ entry.start_time }}</span>
                             <span class="floor-map__schedule-time-end">{{ entry.end_time }}</span>
                         </div>
                         <div class="floor-map__schedule-details">
-                            <div class="floor-map__schedule-type" :style="{ backgroundColor: typeOfColor(entry.type) }">
+                            <div class="floor-map__schedule-type">
                                 {{ entry.type }}</div>
                             <div class="floor-map__schedule-subject">{{ entry.subject }}</div>
                             <div class="floor-map__schedule-teacher">{{ entry.teacher }}</div>
@@ -82,7 +83,7 @@
                     </g>
                     <!-- отрисовка аудиторий -->
                     <g v-for="(classroom, index) in filteredClassrooms" :key="'classroom' + index"
-                    class="floor-map__classroom">
+                    :class="['floor-map__classroom', getClassroomClass(classroom.type)]">
                         <!-- внешний вид -->
                         <polygon
                             :points="formatPoints(classroom.points)"
@@ -153,6 +154,82 @@ export default {
         stageWidth: { type: Number, default: 800 },
         stageHeight: { type: Number, default: 600 },
     },
+    methods: {
+        getClassroomClass(type) {
+            if (!type) return 'floor-map__classroom--default';
+
+            switch (type) {
+                case 'Учебная лаборатория':
+                    return 'floor-map__classroom--edu-lab';
+                case 'Учебная аудитория':
+                    return 'floor-map__classroom--lecture';
+                case 'Административное помещение':
+                    return 'floor-map__classroom--admin';
+                case 'Научная лаборатория':
+                    return 'floor-map__classroom--sci-lab';
+                case 'Помещение административно-хозяйственной части':
+                    return 'floor-map__classroom--ahch';
+                case 'Компьютерный класс':
+                    return 'floor-map__classroom--comp';
+                default:
+                    return 'floor-map__classroom--default';
+            }
+        },
+
+        getScheduleClass(type) {
+            if (!type) return 'floor-map__schedule-item--default';
+
+            switch (type) {
+                case 'Практические занятия и семинары':
+                    return 'floor-map__schedule-item--practice';
+                case 'Лабораторные занятия':
+                    return 'floor-map__schedule-item--lab';
+                case 'Лекции':
+                    return 'floor-map__schedule-item--lecture';
+                case 'Экзамен':
+                case 'Зачет':
+                    return 'floor-map__schedule-item--exam';
+                case 'Консультация к промежуточной аттестции':
+                    return 'floor-map__schedule-item--cosult';
+                case 'Курсовой проект':
+                    return 'floor-map__schedule-item--project';
+                default:
+                    return 'floor-map__schedule-item--default';
+            }
+        },
+
+        goToHome() {
+            router.push({ name: 'BuildingList' });
+        },
+
+        // Форматирование точек для SVG-полигона
+        formatPoints(points) {
+            if (!Array.isArray(points) || points.length === 0) {
+                console.warn("Неверные данные для points:", points);
+                return "";
+            }
+            // console.log(points);
+            return points
+                .map(point => {
+                    // Проверка на наличие координат x и y
+                    if (point && typeof point.x === 'number' && typeof point.y === 'number' && !isNaN(point.x) && !isNaN(point.y)) {
+                        return `${point.x},${point.y}`;
+                    } else {
+                        console.warn("Неверная точка:", point);
+                        return null;
+                    }
+                })
+                .filter(Boolean) // Убираем все null значения
+                .join(" ");
+        },
+
+        // Центр аудитории для размещения текста
+        calculateText(points) {
+            const polylabelCoordinates = points.map(point => [point.x, point.y]);
+            const centerPoint = polylabel([polylabelCoordinates], 1.0);
+            return { x: centerPoint[0], y: centerPoint[1] };
+        }
+    },
     setup() {
         const computedWidth = ref(800);
         const computedHeight = ref(600);
@@ -172,6 +249,7 @@ export default {
         const isModalOpen = ref(false);
         const selectedClassroomName = ref("");
         const selectedClassroomNumber = ref("");
+        const selectedClassroomType = ref("");
         const scheduleData = ref([]);
 
         const selectedBuilding = ref(null);
@@ -189,51 +267,6 @@ export default {
 
         const minScale = 0.2;
         const maxScale = 5;
-
-        const goToHome = () => {
-            router.push({ name: 'BuildingList' });
-        };
-
-        const typeOfColor = (type) => {
-            if (type.includes('Практические')) {
-                return '#ff8f00';
-            }
-            if (type.includes('Лабораторные')) {
-                return '#3e8470';
-            }
-            if (type.includes('Лекции')) {
-                return '#276093';
-            }
-            return '#3f79b1';
-        }
-
-        // Форматирование точек для SVG-полигона
-        const formatPoints = (points) => {
-            if (!Array.isArray(points) || points.length === 0) {
-                console.warn("Неверные данные для points:", points);
-                return "";
-            }
-            // console.log(points);
-            return points
-                .map(point => {
-                    // Проверка на наличие координат x и y
-                    if (point && typeof point.x === 'number' && typeof point.y === 'number' && !isNaN(point.x) && !isNaN(point.y)) {
-                        return `${point.x},${point.y}`;
-                    } else {
-                        console.warn("Неверная точка:", point);
-                        return null;
-                    }
-                })
-                .filter(Boolean) // Убираем все null значения
-                .join(" ");
-        };
-
-        // Центр текста для размещения в аудитории
-        const calculateText = (points) => {
-            const polylabelCoordinates = points.map(point => [point.x, point.y]);
-            const centerPoint = polylabel([polylabelCoordinates], 1.0);
-            return { x: centerPoint[0], y: centerPoint[1] };
-        };
 
         // Масштабирование относительно мыши
         const handleZoom = (event) => {
@@ -404,12 +437,15 @@ export default {
         const fetchSchedule = (classroom) => {
             selectedClassroomName.value = classroom.name;
             selectedClassroomNumber.value = classroom.number;
+            selectedClassroomType.value = classroom.type;
+            console.log(selectedClassroomType.value);
             isModalOpen.value = true;
 
             axios.get(`/schedule/roomId/${classroom.id}`).then(res => {
                 scheduleData.value = res.data.map(el => {
                     const [startTime, endTime] = el.Period.split('-');
                     let Type = '-';
+                    console.log(el.Type);
                     switch (el.Type) {
                         case "лек.":
                             Type = "Лекции";
@@ -553,6 +589,7 @@ export default {
                         name: el.Name,
                         floor: el.Floor,
                         number: el.Number + "/" + selectedBuildingShortName.value,
+                        type: el.RoomType,
                         points: coords,
                         buildingId
                     }
@@ -659,14 +696,9 @@ export default {
             scheduleData,
             selectedClassroomName,
             selectedClassroomNumber,
+            selectedClassroomType,
 
             // методы
-            goToHome,
-
-            formatPoints,
-            // calculateTextX,
-            // calculateTextY,
-            calculateText,
             handleClassroomClick,
             handleZoom,
             startPan,
@@ -685,8 +717,6 @@ export default {
             handleTouchStart,
             handleTouchMove,
             handleTouchEnd,
-
-            typeOfColor,
         };
     },
 };
@@ -812,7 +842,7 @@ export default {
 
 .floor-map__schedule-type {
     flex: 0 1 200px;
-    background-color: #276093;
+    /* background-color: #276093; */
     color: #fff;
     padding: 5px 10px;
     margin-right: 10px;
@@ -840,5 +870,53 @@ export default {
     font-size: 14px;
     color: #666767;
     text-align: center;
+}
+
+.floor-map__classroom--edu-lab .floor-map__classroom-polygon {
+    fill: #ade7ad;
+}
+
+.floor-map__classroom--sci-lab .floor-map__classroom-polygon {
+    fill: #abe9da;
+}
+
+.floor-map__classroom--admin .floor-map__classroom-polygon {
+    fill: #e7e6ad;
+}
+
+.floor-map__classroom--ahch .floor-map__classroom-polygon {
+    fill: #ebd9a9;
+}
+
+.floor-map__classroom--comp .floor-map__classroom-polygon {
+    fill: #abb9e9;
+}
+
+.floor-map__schedule-item--practice .floor-map__schedule-type  {
+    background-color: #fe8d01;
+}
+
+.floor-map__schedule-item--lab .floor-map__schedule-type  {
+    background-color: #3f8370;
+}
+
+.floor-map__schedule-item--lecture .floor-map__schedule-type  {
+    background-color: #276192;
+}
+
+.floor-map__schedule-item--exam .floor-map__schedule-type  {
+    background-color: #e91e63;
+}
+
+.floor-map__schedule-item--consult .floor-map__schedule-type  {
+    background-color: #9c5f9f;
+}
+
+.floor-map__schedule-item--project .floor-map__schedule-type  {
+    background-color: #3f7ab2;
+}
+
+.floor-map__schedule-item--default .floor-map__schedule-type  {
+    background-color: #3f79b1;
 }
 </style>
