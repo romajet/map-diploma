@@ -1,7 +1,6 @@
 <!-- src/views/BuildingListView.vue -->
 <template>
-    <div>
-        <h1>Карта</h1>
+    <div class="building-list-view">
         <BuildingList @building-selected="goToMapView" />
     </div>
 </template>
@@ -21,18 +20,7 @@ export default {
 </script>
 
 <style scoped>
-.map-button {
-    width: 200px;
-    height: 80px;
+.building-list-view {
     padding: 20px;
-    background-color: blue;
-    color: white;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.map-button:hover {
-    background-color: darkblue;
 }
 </style>

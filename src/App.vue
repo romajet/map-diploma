@@ -11,8 +11,7 @@ export default {
 
 <style>
 #app {
-    /* с границей у карты плюс 2px к 1700px, поэтому такая цифра */
-    max-width: 1702px;
+    max-width: 1700px;
     margin: 0 auto;
 }
 </style>

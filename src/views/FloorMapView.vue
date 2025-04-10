@@ -1,12 +1,11 @@
 <!-- src/views/FloorMapView.vue -->
 <template>
     <div class="floor-map-view">
-        <FloorMap :stageWidth="mapWidth" :stageHeight="600" />
+        <FloorMap />
     </div>
 </template>
 
 <script>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
 import FloorMap from '@/components/FloorMap.vue';
 
 export default {
@@ -14,26 +13,6 @@ export default {
     components: {
         FloorMap
     },
-    setup() {
-        const mapWidth = ref(Math.min(1700, window.innerWidth));
-
-        const updateWidth = () => {
-            const appContainer = document.getElementById('app');
-            const containerWidth = appContainer ? appContainer.clientWidth : window.innerWidth;
-            mapWidth.value = Math.min(1700, containerWidth);
-        };
-
-        onMounted(() => {
-            updateWidth();
-            window.addEventListener('resize', updateWidth);
-        });
-
-        onBeforeUnmount(() => {
-            window.removeEventListener('resize', updateWidth);
-        });
-
-        return { mapWidth };
-    }
 };
 </script>
 

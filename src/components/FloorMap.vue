@@ -58,8 +58,9 @@
         <div class="floor-map__container">
             <!-- контейнер для svg -->
             <svg
-                :width="computedWidth"
-                :height="computedHeight"
+                ref="svgRef"
+                :width="'100%'"
+                :height="'100%'"
                 @wheel="handleZoom"
                 @mousedown="startPan"
                 @mousemove="panMap"
@@ -234,6 +235,8 @@ export default {
         const computedWidth = ref(800);
         const computedHeight = ref(600);
 
+        const svgRef = ref(null);
+
         const scale = ref(1);
         const panX = ref(0);
         const panY = ref(0);
@@ -407,16 +410,17 @@ export default {
                 const width = maxX - minX;
                 const height = maxY - minY;
 
-                const containerWidth = computedWidth.value;
-                const containerHeight = computedHeight.value;
+                const { width: containerWidth, height: containerHeight } = svgRef.value.getBoundingClientRect();
+                // console.log("svgRef", svgRef, svgRef.value.getBoundingClientRect());
+                // console.log("w&h", containerWidth, containerHeight);
 
                 const scaleX = containerWidth / (width + 20);
                 const scaleY = containerHeight / (height + 20);
                 const optimalScale = Math.min(scaleX, scaleY, maxScale);
 
                 scale.value = optimalScale;
-                panX.value = computedWidth.value / 2 - centerX * scale.value;
-                panY.value = computedHeight.value / 2 - centerY * scale.value;
+                panX.value = containerWidth / 2 - centerX * scale.value;
+                panY.value = containerHeight / 2 - centerY * scale.value;
             } else {
                 console.warn("нет данных для центрирования");
             }
@@ -677,6 +681,8 @@ export default {
 
         return {
             // переменные
+            svgRef,
+
             scale,
             computedWidth,
             computedHeight,
@@ -723,18 +729,28 @@ export default {
 </script>
 
 <style scoped>
-.floor-map__container {
-    border: 1px solid #ddd;
-    position: relative;
-    overflow: hidden;
-    touch-action: none;
+.floor-map {
+    padding: 20px;
+    box-sizing: border-box;
+    height: 100vh;
+    width: 100vw;
+    max-width: 1700px;
     display: flex;
     flex-direction: column;
 }
 
-.floor-map__svg {
-    flex: 1;
+.floor-map__container {
+    border: 1px solid black;
+    flex-grow: 1;
+    width: 100%;
     height: 100%;
+    overflow: hidden;
+}
+
+.floor-map__svg {
+    width: 100%;
+    height: 100%;
+    display: block;
 }
 
 .floor-map__overlay {
@@ -776,7 +792,7 @@ export default {
 
 .floor-map__controls {
     position: absolute;
-    top: 20px;
+    top: 30px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -918,5 +934,9 @@ export default {
 
 .floor-map__schedule-item--default .floor-map__schedule-type  {
     background-color: #3f79b1;
+}
+
+.floor-map__button {
+    padding: 2px 6px;
 }
 </style>
