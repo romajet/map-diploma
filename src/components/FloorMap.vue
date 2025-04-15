@@ -331,6 +331,7 @@ export default {
 
         // Начало взаимодействия с сенсорным экраном
         const handleTouchStart = (event) => {
+        event.preventDefault();
             if (event.touches.length === 2) {
                 // Если два пальца касаются экрана, начинаем жест масштабирования
                 const touch1 = event.touches[0];
@@ -347,6 +348,7 @@ export default {
 
         // Обработка движения касания
         const handleTouchMove = (event) => {
+            event.preventDefault();
             if (event.touches.length === 2 && initialTouchDistance != null) {
                 // Жест масштабирования двумя пальцами
                 const touch1 = event.touches[0];
@@ -372,7 +374,8 @@ export default {
         };
 
         // Завершение сенсорного взаимодействия
-        const handleTouchEnd = () => {
+        const handleTouchEnd = (event) => {
+            if (event) event.preventDefault();
             initialTouchDistance = null;
             isPanning.value = false;
         };
@@ -657,8 +660,14 @@ export default {
 
         // что будет после монтирования компонента
         onMounted(async () => {
-            updateComputedSize();
-            window.addEventListener('resize', updateComputedSize);
+            // updateComputedSize();
+            // window.addEventListener('resize', updateComputedSize);
+
+            if (svgRef.value) {
+                svgRef.value.addEventListener("touchstart", handleTouchStart, { passive: false });
+                svgRef.value.addEventListener("touchmove", handleTouchMove, { passive: false });
+                svgRef.value.addEventListener("touchend", handleTouchEnd, { passive: false });
+            }
 
             await fetchBuildings();
 
@@ -676,7 +685,13 @@ export default {
 
         // что будет прямо перед монтированием компонента
         onBeforeUnmount(() => {
-            window.removeEventListener('resize', updateComputedSize);
+            // window.removeEventListener('resize', updateComputedSize);
+
+            if (svgRef.value) {
+                svgRef.value.removeEventListener("touchstart", handleTouchStart);
+                svgRef.value.removeEventListener("touchmove", handleTouchMove);
+                svgRef.value.removeEventListener("touchend", handleTouchEnd);
+            }
         });
 
         return {
@@ -751,6 +766,7 @@ export default {
     width: 100%;
     height: 100%;
     display: block;
+    touch-action: none;
 }
 
 .floor-map__overlay {
