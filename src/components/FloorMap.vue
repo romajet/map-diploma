@@ -262,6 +262,8 @@ export default {
 
         const floorDataLoaded = ref(false);
 
+        let touchStartX = 0;
+        let touchStartY = 0;
         let isDragging = false;
         let dragThreshold = 5; // порог перемещения в пикселях для отмены нажатия
 
@@ -331,8 +333,9 @@ export default {
 
         // Начало взаимодействия с сенсорным экраном
         const handleTouchStart = (event) => {
-        event.preventDefault();
             if (event.touches.length === 2) {
+                event.preventDefault();
+
                 // Если два пальца касаются экрана, начинаем жест масштабирования
                 const touch1 = event.touches[0];
                 const touch2 = event.touches[1];
@@ -343,13 +346,17 @@ export default {
                 isPanning.value = true;
                 startX.value = event.touches[0].clientX - panX.value;
                 startY.value = event.touches[0].clientY - panY.value;
+
+                touchStartX = event.touches[0].clientX;
+                touchStartY = event.touches[0].clientY;
             }
         };
 
         // Обработка движения касания
         const handleTouchMove = (event) => {
-            event.preventDefault();
             if (event.touches.length === 2 && initialTouchDistance != null) {
+                event.preventDefault();
+
                 // Жест масштабирования двумя пальцами
                 const touch1 = event.touches[0];
                 const touch2 = event.touches[1];
@@ -368,16 +375,27 @@ export default {
                 scale.value = newScale;
             } else if (event.touches.length === 1 && isPanning.value) {
                 // Перетаскивание одним пальцем
-                panX.value = event.touches[0].clientX - startX.value;
-                panY.value = event.touches[0].clientY - startY.value;
+                const deltaX = Math.abs(event.touches[0].clientX - touchStartX);
+                const deltaY = Math.abs(event.touches[0].clientY - touchStartY);
+
+                if (deltaX > dragThreshold || deltaY > dragThreshold) {
+                    event.preventDefault();
+                    isDragging = true;
+
+                    panX.value = event.touches[0].clientX - startX.value;
+                    panY.value = event.touches[0].clientY - startY.value;
+                }
             }
         };
 
         // Завершение сенсорного взаимодействия
-        const handleTouchEnd = (event) => {
-            if (event) event.preventDefault();
+        const handleTouchEnd = () => {
             initialTouchDistance = null;
             isPanning.value = false;
+
+            setTimeout(() => {
+                isDragging = false;
+            }, 10);
         };
 
         // Вспомогательная функция для вычисления расстояния между двумя касаниями
@@ -766,7 +784,7 @@ export default {
     width: 100%;
     height: 100%;
     display: block;
-    touch-action: none;
+    touch-action: pan-x pan-y;
 }
 
 .floor-map__overlay {
