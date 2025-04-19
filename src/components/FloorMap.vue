@@ -3,7 +3,6 @@
     <div class="floor-map">
         <div class="floor-map__controls">
             <!-- возврат к списку корпусов -->
-            <!-- <button @click="goToHome" class="floor-map__button floor-map__button--home">Дом</button> -->
             <button @click="goToHome" class="floor-map__button floor-map__button--home" title="К выбору корпусов">
                 <IconHome />
             </button>
@@ -22,7 +21,6 @@
                 </option>
             </select>
             <!-- кнопка центрирования -->
-            <!-- <button @click="centerMap" class="floor-map__button floor-map__button--center">Центр.</button> -->
             <button @click="centerMap" class="floor-map__button floor-map__button--center" title="Центрировать">
                 <IconFrame />
             </button>
@@ -36,7 +34,8 @@
                 <h3 class="floor-map__modal-title">{{ selectedClassroomNumber }} - {{ selectedClassroomName }}</h3>
                 <!-- <h4 class="floor-map__modal-type">{{ selectedClassroomType }}</h4> -->
                 <div v-if="scheduleData.length" class="floor-map__schedule">
-                    <div v-for="(entry, index) in scheduleData" :key="index" :class="['floor-map__schedule-item', getScheduleClass(entry.type)]">
+                    <div v-for="(entry, index) in scheduleData" :key="index"
+                        :class="['floor-map__schedule-item', getScheduleClass(entry.type)]">
                         <div class="floor-map__schedule-time">
                             <span class="floor-map__schedule-time-start">{{ entry.start_time }}</span>
                             <span class="floor-map__schedule-time-end">{{ entry.end_time }}</span>
@@ -68,13 +67,13 @@
                 @touchstart="handleTouchStart"
                 @touchmove="handleTouchMove"
                 @touchend="handleTouchEnd"
-                class="floor-map__svg">
+                class="floor-map__svg"
+            >
                 <!-- группа для масштабирования и параномирования -->
                 <g :transform="'translate(' + panX + ', ' + panY + ') scale(' + scale + ')'"
                     class="floor-map__svg-content">
                     <!-- отрисовка заполнения корпуса -->
-                    <g v-for="(building, index) in filteredBuildings" :key="index"
-                    class="floor-map__building">
+                    <g v-for="(building, index) in filteredBuildings" :key="index" class="floor-map__building">
                         <polygon
                             :points="formatPoints(building.points)"
                             :fill="building.fill || 'gray'"
@@ -84,11 +83,11 @@
                     </g>
                     <!-- отрисовка аудиторий -->
                     <g v-for="(classroom, index) in filteredClassrooms" :key="'classroom' + index"
-                    :class="['floor-map__classroom', getClassroomClass(classroom.type)]">
+                        :class="['floor-map__classroom', getClassroomClass(classroom.type)]">
                         <!-- внешний вид -->
                         <polygon
                             :points="formatPoints(classroom.points)"
-                            :fill="getFillColor(classroom.name)"
+                            :fill="'lightblue'"
                             stroke="blue"
                             stroke-width="1"
                             class="floor-map__classroom-polygon"
@@ -103,14 +102,12 @@
                             font-family="Arial"
                             fill="black"
                             style="user-select: none;"
-                            class="floor-map__classroom-number"
-                        >
+                            class="floor-map__classroom-number">
                             {{ classroom.number }}
                         </text>
                     </g>
                     <!-- отрисовка граней корпуса -->
-                    <g v-for="(building, index) in filteredBuildings" :key="index"
-                    class="floor-map__building">
+                    <g v-for="(building, index) in filteredBuildings" :key="index" class="floor-map__building">
                         <polygon
                             :points="formatPoints(building.points)"
                             fill-opacity="0"
@@ -121,7 +118,7 @@
                     </g>
                     <!-- отрисовка аудиторий -->
                     <g v-for="(classroom, index) in filteredClassrooms" :key="'classroom' + index"
-                    class="floor-map__classroom">
+                        class="floor-map__classroom">
                         <!-- прозрачный полигон для обработки нажатия -->
                         <polygon
                             :points="formatPoints(classroom.points)"
@@ -139,11 +136,11 @@
 </template>
 
 <script>
-import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue";
-import axios from "../axios";
-import router from '@/router';
-import polylabel from "polylabel";
-import { IconHome, IconFrame } from "@tabler/icons-vue";
+import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue"
+import axios from "../axios"
+import router from '@/router'
+import polylabel from "polylabel"
+import { IconHome, IconFrame } from "@tabler/icons-vue"
 
 export default {
     name: "FloorMap",
@@ -151,11 +148,91 @@ export default {
         IconFrame,
         IconHome
     },
-    props: {
-        stageWidth: { type: Number, default: 800 },
-        stageHeight: { type: Number, default: 600 },
+    data() {
+        return {
+            svgRef: null,
+
+            scale: 1,
+            panX: 0,
+            panY: 0,
+            startX: 0,
+            startY: 0,
+            isPanning: false,
+            minScale: 0.2,
+            maxScale: 5,
+
+            buildings: [],
+            classrooms: [],
+            filteredBuildings: [],
+            filteredClassrooms: [],
+
+            selectedBuilding: null,
+            selectedClassroomShortName: "",
+            selectedFloor: null,
+            avaliableFloors: [],
+            floorDataLoaded: false,
+
+            isModalOpen: false,
+            selectedClassroomName: "",
+            selectedClassroomNumber: "",
+            selectedClassroomType: "",
+            scheduleData: [],
+
+            touchStartX: 0,
+            touchStartY: 0,
+            isDragging: false,
+            dragThreshold: 5,
+            initialTouchDistance: null,
+            initialScale: 1,
+        }
+    },
+    watch: {
+        floorDataLoaded(newValue) {
+            if (newValue) {
+                this.centerMap()
+            }
+        },
+    },
+    mounted() {
+        this.$nextTick(() => {
+            if (this.$refs.svgRef) {
+                this.svgRef = this.$refs.svgRef
+                this.svgRef.addEventListener("touchstart", this.handleTouchStart, { passive: false })
+                this.svgRef.addEventListener("touchmove", this.handleTouchMove, { passive: false })
+                this.svgRef.addEventListener("touchend", this.handleTouchEnd, { passive: false })
+            }
+        })
+
+        // Сначала загружаем список зданий
+        this.fetchBuildings().then(() => {
+            // После загрузки зданий проверяем URL-параметры
+            const { korpus, floor } = router.currentRoute.value.query
+
+            if (korpus) {
+                // Проверяем, существует ли такой корпус в списке
+                const buildingExists = this.buildings.some(building => building.buildingId === korpus)
+
+                if (buildingExists) {
+                    this.selectedBuilding = korpus
+                    this.onBuildingChange().then(() => {
+                        if (floor && this.selectedFloor !== Number(floor)) {
+                            this.selectedFloor = Number(floor)
+                            this.onFloorChange()
+                        }
+                    })
+                }
+            }
+        })
+    },
+    beforeDestroy() {
+        if (this.svgRef) {
+            this.svgRef.removeEventListener("touchstart", this.handleTouchStart)
+            this.svgRef.removeEventListener("touchmove", this.handleTouchMove)
+            this.svgRef.removeEventListener("touchend", this.handleTouchEnd)
+        }
     },
     methods: {
+        // классы для аудиторий
         getClassroomClass(type) {
             if (!type) return 'floor-map__classroom--default';
 
@@ -177,6 +254,7 @@ export default {
             }
         },
 
+        // классы для расписания
         getScheduleClass(type) {
             if (!type) return 'floor-map__schedule-item--default';
 
@@ -213,7 +291,13 @@ export default {
             return points
                 .map(point => {
                     // Проверка на наличие координат x и y
-                    if (point && typeof point.x === 'number' && typeof point.y === 'number' && !isNaN(point.x) && !isNaN(point.y)) {
+                    if (
+                        point &&
+                        typeof point.x === 'number' &&
+                        typeof point.y === 'number' &&
+                        !isNaN(point.x) &&
+                        !isNaN(point.y)
+                    ) {
                         return `${point.x},${point.y}`;
                     } else {
                         console.warn("Неверная точка:", point);
@@ -229,547 +313,421 @@ export default {
             const polylabelCoordinates = points.map(point => [point.x, point.y]);
             const centerPoint = polylabel([polylabelCoordinates], 1.0);
             return { x: centerPoint[0], y: centerPoint[1] };
-        }
-    },
-    setup() {
-        const computedWidth = ref(800);
-        const computedHeight = ref(600);
+        },
 
-        const svgRef = ref(null);
+        // масштабирование относительно мыши
+        handleZoom(event) {
+            event.preventDefault()
+            const scaleBy = 1.1
 
-        const scale = ref(1);
-        const panX = ref(0);
-        const panY = ref(0);
-        const startX = ref(0);
-        const startY = ref(0);
-        const isPanning = ref(false);
-
-        const buildings = ref([]);
-        const classrooms = ref([]);
-        const filteredBuildings = ref([]);
-        const filteredClassrooms = ref([]);
-
-        const isModalOpen = ref(false);
-        const selectedClassroomName = ref("");
-        const selectedClassroomNumber = ref("");
-        const selectedClassroomType = ref("");
-        const scheduleData = ref([]);
-
-        const selectedBuilding = ref(null);
-        const selectedBuildingShortName = ref('');
-        const selectedFloor = ref(1);
-        const avaliableFloors = ref([]);
-
-        const floorDataLoaded = ref(false);
-
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let isDragging = false;
-        let dragThreshold = 5; // порог перемещения в пикселях для отмены нажатия
-
-        let initialTouchDistance = null;
-        let initialScale = 1;
-
-        const minScale = 0.2;
-        const maxScale = 5;
-
-        // Масштабирование относительно мыши
-        const handleZoom = (event) => {
-            event.preventDefault();
-            const scaleBy = 1.1;
-
-            const direction = event.deltaY > 0 ? -1 : 1;
-            const oldScale = scale.value;
-            const newScale = Math.max(minScale, Math.min(oldScale * (direction > 0 ? scaleBy : 1 / scaleBy), maxScale));
+            const direction = event.deltaY > 0 ? -1 : 1
+            const oldScale = this.scale;
+            const newScale = Math.max(
+                this.minScale,
+                Math.min(oldScale * (direction > 0 ? scaleBy : 1 / scaleBy), this.maxScale)
+            );
 
             const rect = event.currentTarget.getBoundingClientRect();
-            const mouseX = (event.clientX - rect.left - panX.value) / oldScale;
-            const mouseY = (event.clientY - rect.top - panY.value) / oldScale;
+            const mouseX = (event.clientX - rect.left - this.panX) / oldScale;
+            const mouseY = (event.clientY - rect.top - this.panY) / oldScale;
 
-            panX.value -= (mouseX * newScale - mouseX * oldScale);
-            panY.value -= (mouseY * newScale - mouseY * oldScale);
+            this.panX -= (mouseX * newScale - mouseX * oldScale);
+            this.panY -= (mouseY * newScale - mouseY * oldScale);
 
-            scale.value = newScale;
-        };
+            this.scale = newScale;
+        },
 
         // Начало панорамирования
-        const startPan = (event) => {
-            isPanning.value = true;
-            isDragging = false; // Сбрасываем флаг перемещения
-            startX.value = event.clientX - panX.value;
-            startY.value = event.clientY - panY.value;
-        };
+        startPan(event) {
+            this.isPanning = true
+            this.isDragging = false // Сбрасываем флаг перемещения
+            this.startX = event.clientX - this.panX
+            this.startY = event.clientY - this.panY
+        },
 
         // Панорамирование карты
-        const panMap = (event) => {
-            if (isPanning.value) {
-                const deltaX = Math.abs(event.clientX - startX.value);
-                const deltaY = Math.abs(event.clientY - startY.value);
+        panMap(event) {
+            if (this.isPanning) {
+                const deltaX = Math.abs(event.clientX - this.startX)
+                const deltaY = Math.abs(event.clientY - this.startY)
 
                 // устанавливаем флаг, если перемещение превышает порог
-                if (deltaX > dragThreshold || deltaY > dragThreshold) {
-                    isDragging = true;
+                if (deltaX > this.dragThreshold || deltaY > this.dragThreshold) {
+                    this.isDragging = true
                 }
 
-                panX.value = event.clientX - startX.value;
-                panY.value = event.clientY - startY.value;
+                this.panX = event.clientX - this.startX
+                this.panY = event.clientY - this.startY
             }
-        };
+        },
 
         // Завершение панорамирования
-        const endPan = () => {
-            isPanning.value = false;
-        };
+        endPan() {
+            this.isPanning = false
+        },
 
         // Обработка клика и касания по аудитории
-        const handleClassroomClick = (classroom) => {
-            if (!isDragging) {
-                // console.log("Нажата аудитория:", classroom);
-                fetchSchedule(classroom);
+        handleClassroomClick(classroom) {
+            if (!this.isDragging) {
+                this.fetchSchedule(classroom)
             } else {
-                console.log("Перемещение карты, нажатие на аудиторию отменено");
+                console.log("Перемещение карты, нажатие на аудиторию отменено")
             }
-        };
+        },
 
         // Начало взаимодействия с сенсорным экраном
-        const handleTouchStart = (event) => {
+        handleTouchStart(event) {
             if (event.touches.length === 2) {
-                event.preventDefault();
+                event.preventDefault()
 
                 // Если два пальца касаются экрана, начинаем жест масштабирования
-                const touch1 = event.touches[0];
-                const touch2 = event.touches[1];
-                initialTouchDistance = getDistanceBetweenTouches(touch1, touch2);
-                initialScale = scale.value;
+                const touch1 = event.touches[0]
+                const touch2 = event.touches[1]
+                this.initialTouchDistance = this.getDistanceBetweenTouches(touch1, touch2)
+                this.initialScale = this.scale
             } else if (event.touches.length === 1) {
                 // Если один палец касается экрана, начинаем перетаскивание
-                isPanning.value = true;
-                startX.value = event.touches[0].clientX - panX.value;
-                startY.value = event.touches[0].clientY - panY.value;
+                this.isPanning = true
+                this.startX = event.touches[0].clientX - this.panX
+                this.startY = event.touches[0].clientY - this.panY
 
-                touchStartX = event.touches[0].clientX;
-                touchStartY = event.touches[0].clientY;
+                this.touchStartX = event.touches[0].clientX
+                this.touchStartY = event.touches[0].clientY
             }
-        };
+        },
 
         // Обработка движения касания
-        const handleTouchMove = (event) => {
-            if (event.touches.length === 2 && initialTouchDistance != null) {
-                event.preventDefault();
+        handleTouchMove(event) {
+            if (event.touches.length === 2 && this.initialTouchDistance != null) {
+                event.preventDefault()
 
                 // Жест масштабирования двумя пальцами
-                const touch1 = event.touches[0];
-                const touch2 = event.touches[1];
-                const currentDistance = getDistanceBetweenTouches(touch1, touch2);
-                const scaleFactor = currentDistance / initialTouchDistance;
-                const newScale = Math.max(minScale, Math.min(initialScale * scaleFactor, maxScale));
+                const touch1 = event.touches[0]
+                const touch2 = event.touches[1]
+                const currentDistance = this.getDistanceBetweenTouches(touch1, touch2)
+                const scaleFactor = currentDistance / this.initialTouchDistance
+                const newScale = Math.max(this.minScale, Math.min(this.initialScale * scaleFactor, this.maxScale))
 
                 // Центрирование масштабирования
-                const rect = event.currentTarget.getBoundingClientRect();
-                const centerX = (touch1.clientX + touch2.clientX) / 2 - rect.left - panX.value;
-                const centerY = (touch1.clientY + touch2.clientY) / 2 - rect.top - panY.value;
+                const rect = event.currentTarget.getBoundingClientRect()
+                const centerX = (touch1.clientX + touch2.clientX) / 2 - rect.left - this.panX
+                const centerY = (touch1.clientY + touch2.clientY) / 2 - rect.top - this.panY
 
-                panX.value -= (centerX / scale.value) * (newScale - scale.value);
-                panY.value -= (centerY / scale.value) * (newScale - scale.value);
+                this.panX -= (centerX / this.scale) * (newScale - this.scale)
+                this.panY -= (centerY / this.scale) * (newScale - this.scale)
 
-                scale.value = newScale;
-            } else if (event.touches.length === 1 && isPanning.value) {
+                this.scale = newScale
+            } else if (event.touches.length === 1 && this.isPanning) {
                 // Перетаскивание одним пальцем
-                const deltaX = Math.abs(event.touches[0].clientX - touchStartX);
-                const deltaY = Math.abs(event.touches[0].clientY - touchStartY);
+                const deltaX = Math.abs(event.touches[0].clientX - this.touchStartX)
+                const deltaY = Math.abs(event.touches[0].clientY - this.touchStartY)
 
-                if (deltaX > dragThreshold || deltaY > dragThreshold) {
-                    event.preventDefault();
-                    isDragging = true;
+                if (deltaX > this.dragThreshold || deltaY > this.dragThreshold) {
+                    event.preventDefault()
+                    this.isDragging = true
 
-                    panX.value = event.touches[0].clientX - startX.value;
-                    panY.value = event.touches[0].clientY - startY.value;
+                    this.panX = event.touches[0].clientX - this.startX
+                    this.panY = event.touches[0].clientY - this.startY
                 }
             }
-        };
+        },
 
         // Завершение сенсорного взаимодействия
-        const handleTouchEnd = () => {
-            initialTouchDistance = null;
-            isPanning.value = false;
+        handleTouchEnd() {
+            this.initialTouchDistance = null
+            this.isPanning = false
 
             setTimeout(() => {
-                isDragging = false;
-            }, 10);
-        };
+                this.isDragging = false
+            }, 10)
+        },
 
         // Вспомогательная функция для вычисления расстояния между двумя касаниями
-        const getDistanceBetweenTouches = (touch1, touch2) => {
-            const dx = touch2.clientX - touch1.clientX;
-            const dy = touch2.clientY - touch1.clientY;
-            return Math.sqrt(dx * dx + dy * dy);
-        };
+        getDistanceBetweenTouches(touch1, touch2) {
+            const dx = touch2.clientX - touch1.clientX
+            const dy = touch2.clientY - touch1.clientY
+            return Math.sqrt(dx * dx + dy * dy)
+        },
 
-        // центрирование корпуса
-        const centerMap = () => {
-            let targetPoints = [];
+        // Центрирование корпуса
+        centerMap() {
+            let targetPoints = []
 
-            if (filteredBuildings.value[0]?.points?.length) {
-                targetPoints = filteredBuildings.value[0].points;
-            }
-            else if (filteredClassrooms.value.length) {
-                targetPoints = filteredClassrooms.value.flatMap((classroom) => classroom.points);
+            if (this.filteredBuildings[0]?.points?.length) {
+                targetPoints = this.filteredBuildings[0].points
+            } else if (this.filteredClassrooms.length) {
+                targetPoints = this.filteredClassrooms.flatMap((classroom) => classroom.points)
             }
 
             if (targetPoints.length) {
-                const xCoords = targetPoints.map((p) => p.x);
-                const yCoords = targetPoints.map((p) => p.y);
+                const xCoords = targetPoints.map((p) => p.x)
+                const yCoords = targetPoints.map((p) => p.y)
 
-                const minX = Math.min(...xCoords);
-                const maxX = Math.max(...xCoords);
-                const minY = Math.min(...yCoords);
-                const maxY = Math.max(...yCoords);
+                const minX = Math.min(...xCoords)
+                const maxX = Math.max(...xCoords)
+                const minY = Math.min(...yCoords)
+                const maxY = Math.max(...yCoords)
 
-                const centerX = (minX + maxX) / 2;
-                const centerY = (minY + maxY) / 2;
+                const centerX = (minX + maxX) / 2
+                const centerY = (minY + maxY) / 2
 
-                const width = maxX - minX;
-                const height = maxY - minY;
+                const width = maxX - minX
+                const height = maxY - minY
 
-                const { width: containerWidth, height: containerHeight } = svgRef.value.getBoundingClientRect();
-                // console.log("svgRef", svgRef, svgRef.value.getBoundingClientRect());
-                // console.log("w&h", containerWidth, containerHeight);
+                const { width: containerWidth, height: containerHeight } = this.svgRef.getBoundingClientRect()
 
-                const scaleX = containerWidth / (width + 20);
-                const scaleY = containerHeight / (height + 20);
-                const optimalScale = Math.min(scaleX, scaleY, maxScale);
+                const scaleX = containerWidth / (width + 20)
+                const scaleY = containerHeight / (height + 20)
+                const optimalScale = Math.min(scaleX, scaleY, this.maxScale)
 
-                scale.value = optimalScale;
-                panX.value = containerWidth / 2 - centerX * scale.value;
-                panY.value = containerHeight / 2 - centerY * scale.value;
+                this.scale = optimalScale
+                this.panX = containerWidth / 2 - centerX * this.scale
+                this.panY = containerHeight / 2 - centerY * this.scale
             } else {
-                console.warn("нет данных для центрирования");
+                console.warn("нет данных для центрирования")
             }
-        };
+        },
 
-        // Цвет для аудиторий по названию
-        const getFillColor = (name) => {
-            if (name) {
-                if (name.includes("Лестница")) return "LightCyan";
-                if (name.includes("Муж")) return "SkyBlue";
-                if (name.includes("Жен")) return "Pink";
-                return "lightblue";
-            }
-            return "lightblue";
-        };
+        // Получение расписания
+        fetchSchedule(classroom) {
+            this.selectedClassroomName = classroom.name
+            this.selectedClassroomNumber = classroom.number
+            this.selectedClassroomType = classroom.type
+            console.log(this.selectedClassroomType)
+            this.isModalOpen = true
 
-        // получение расписания
-        const fetchSchedule = (classroom) => {
-            selectedClassroomName.value = classroom.name;
-            selectedClassroomNumber.value = classroom.number;
-            selectedClassroomType.value = classroom.type;
-            console.log(selectedClassroomType.value);
-            isModalOpen.value = true;
-
-            axios.get(`/schedule/roomId/${classroom.id}`).then(res => {
-                scheduleData.value = res.data.map(el => {
-                    const [startTime, endTime] = el.Period.split('-');
-                    let Type = '-';
-                    console.log(el.Type);
-                    switch (el.Type) {
-                        case "лек.":
-                            Type = "Лекции";
-                            break;
-                        case "лаб.":
-                            Type = "Лабораторные занятия";
-                            break;
-                        case 'практ.зан.  и семин.':
-                            Type = "Практические занятия и семинары";
-                            break;
-                    }
-                    return {
-                        groups: el.Groups,
-                        id: el.Id,
-                        start_time: startTime.trim().slice(0, 5),
-                        end_time: endTime.trim().slice(0, 5),
-                        subject: el.Subject,
-                        teacher: el.Teacher,
-                        type: Type
-                    };
-                });
-                scheduleData.value.sort((a, b) => {
-                    const timeA = new Date(`1970-01-01T${a.start_time}:00`).getTime();
-                    const timeB = new Date(`1970-01-01T${b.start_time}:00`).getTime();
-                    return timeA - timeB;
+            axios
+                .get(`/schedule/roomId/${classroom.id}`)
+                .then((res) => {
+                    this.scheduleData = res.data.map((el) => {
+                        const [startTime, endTime] = el.Period.split("-")
+                        let Type = "-"
+                        console.log(el.Type)
+                        switch (el.Type) {
+                            case "лек.":
+                                Type = "Лекции"
+                                break
+                            case "лаб.":
+                                Type = "Лабораторные занятия"
+                                break
+                            case "практ.зан.  и семин.":
+                                Type = "Практические занятия и семинары"
+                                break
+                        }
+                        return {
+                            groups: el.Groups,
+                            id: el.Id,
+                            start_time: startTime.trim().slice(0, 5),
+                            end_time: endTime.trim().slice(0, 5),
+                            subject: el.Subject,
+                            teacher: el.Teacher,
+                            type: Type,
+                        }
+                    })
+                    this.scheduleData.sort((a, b) => {
+                        const timeA = new Date(`1970-01-01T${a.start_time}:00`).getTime()
+                        const timeB = new Date(`1970-01-01T${b.start_time}:00`).getTime()
+                        return timeA - timeB
+                    })
                 })
-            }).catch(error => {
-                console.error('что-то создает ошибки при загрузке расписания:', error);
-                scheduleData.value = [];
-            });
-        };
+                .catch((error) => {
+                    console.error("что-то создает ошибки при загрузке расписания:", error)
+                    this.scheduleData = []
+                })
+        },
 
-        const closeModal = () => {
-            isModalOpen.value = false;
-            scheduleData.value = [];
-        };
+        // Закрытие модального окна
+        closeModal() {
+            this.isModalOpen = false
+            this.scheduleData = []
+        },
 
-        const fetchBuildings = async () => {
+        async fetchBuildings() {
             try {
-                const res = await axios.get('/buildings');
-                buildings.value = res.data.map((el) => ({
+                const res = await axios.get("/buildings")
+                this.buildings = res.data.map((el) => ({
                     buildingId: el.Id,
                     name: el.Name,
-                    shortname: el.ShortName
-                }));
-                selectedBuilding.value = buildings.value[0].buildingId;
-                selectedBuildingShortName.value = buildings.value[0].shortname;
-                onBuildingChange();
-            } catch (error) {
-                console.error('что-то создает ошибки загрузки корпусов: ', error);
-            }
-        };
+                    shortname: el.ShortName,
+                }))
 
-        const onBuildingChange = async () => {
-            if (selectedBuilding.value) {
-                floorDataLoaded.value = false;
+                // Сохраняем текущий выбранный корпус
+                const currentSelectedBuilding = this.selectedBuilding
 
-                classrooms.value = [];
-                filteredClassrooms.value = [];
-                avaliableFloors.value = [];
-                filteredBuildings.value = [];
-
-                const selectedBuildingInfo = buildings.value.find(
-                    (building) => building.buildingId === selectedBuilding.value
-                );
-                selectedBuildingShortName.value = selectedBuildingInfo.shortname;
-
-                await fetchClassrooms(selectedBuilding.value);
-
-                if (avaliableFloors.value.length > 0) {
-                    const { floor } = router.currentRoute.value.query;
-                    const floorNumber = Number(floor);
-
-                    if (floor && avaliableFloors.value.includes(floorNumber)) {
-                        selectedFloor.value = floorNumber;
-                    } else {
-                        selectedFloor.value = avaliableFloors.value[0] === 0 ? avaliableFloors.value[1] : avaliableFloors.value[0];
-                    }
+                // Устанавливаем selectedBuilding только если он еще не установлен
+                if (!currentSelectedBuilding) {
+                    this.selectedBuilding = this.buildings[0].buildingId
+                    this.selectedBuildingShortName = this.buildings[0].shortname
                 } else {
-                    console.warn('у корпуса нет этажей');
-                    selectedFloor.value = null;
+                    // Если корпус уже выбран, обновляем только shortname
+                    const selectedBuildingInfo = this.buildings.find(
+                        (building) => building.buildingId === currentSelectedBuilding
+                    )
+                    if (selectedBuildingInfo) {
+                        this.selectedBuildingShortName = selectedBuildingInfo.shortname
+                    }
                 }
 
-                updateUrlParams();
-                await fetchBuildingCoordinates(selectedBuilding.value, selectedFloor.value);
-                filterClassrooms();
-                floorDataLoaded.value = true;
-                centerMap();
+                this.onBuildingChange()
+            } catch (error) {
+                console.error("что-то создает ошибки загрузки корпусов: ", error)
             }
-        };
+        },
 
-        const onFloorChange = async () => {
-            floorDataLoaded.value = false;
-            updateUrlParams();
-            await fetchBuildingCoordinates(selectedBuilding.value, selectedFloor.value);
-            filterClassrooms();
-            floorDataLoaded.value = true;
-            centerMap();
-        };
+        // Обработка изменения корпуса
+        async onBuildingChange() {
+            if (this.selectedBuilding) {
+                this.floorDataLoaded = false
 
-        const fetchBuildingCoordinates = async (buildingId, floor) => {
+                this.classrooms = []
+                this.filteredClassrooms = []
+                this.avaliableFloors = []
+                this.filteredBuildings = []
+
+                const selectedBuildingInfo = this.buildings.find((building) => building.buildingId === this.selectedBuilding)
+                // console.log(selectedBuildingInfo)
+                this.selectedBuildingShortName = selectedBuildingInfo.shortname
+                // console.log(this.selectedClassroomShortName)
+
+                await this.fetchClassrooms(this.selectedBuilding)
+
+                if (this.avaliableFloors.length > 0) {
+                    const { floor } = router.currentRoute.value.query
+                    const floorNumber = Number(floor)
+
+                    if (floor && this.avaliableFloors.includes(floorNumber)) {
+                        this.selectedFloor = floorNumber
+                    } else {
+                        this.selectedFloor = this.avaliableFloors[0] === 0 ? this.avaliableFloors[1] : this.avaliableFloors[0]
+                    }
+                } else {
+                    console.warn("у корпуса нет этажей")
+                    this.selectedFloor = null
+                }
+
+                this.updateUrlParams()
+                await this.fetchBuildingCoordinates(this.selectedBuilding, this.selectedFloor)
+                this.filterClassrooms()
+                this.floorDataLoaded = true
+                this.centerMap()
+            }
+        },
+
+        // Обработка изменения этажа
+        async onFloorChange() {
+            this.floorDataLoaded = false
+            this.updateUrlParams()
+            await this.fetchBuildingCoordinates(this.selectedBuilding, this.selectedFloor)
+            this.filterClassrooms()
+            this.floorDataLoaded = true
+            this.centerMap()
+        },
+
+        // Загрузка координат корпуса
+        async fetchBuildingCoordinates(buildingId, floor) {
             try {
-                const res = await axios.get(`/buildingcoordinates/buildingId/${buildingId}/floor/${floor}`);
-                const buildingData = res.data ? JSON.parse(res.data) : null;
+                const res = await axios.get(`/buildingcoordinates/buildingId/${buildingId}/floor/${floor}`)
+                const buildingData = res.data ? JSON.parse(res.data) : null
 
                 if (buildingData && Array.isArray(buildingData.points)) {
-                    buildings.value = buildings.value.map((building) => {
+                    this.buildings = this.buildings.map((building) => {
                         if (building.buildingId === buildingId) {
                             return {
                                 ...building,
-                                points: buildingData.points
-                            };
+                                points: buildingData.points,
+                            }
                         }
-                        return building;
-                    });
-                    filteredBuildings.value = buildings.value.filter(building => building.buildingId === selectedBuilding.value);
-                    return true;
+                        return building
+                    })
+                    this.filteredBuildings = this.buildings.filter((building) => building.buildingId === this.selectedBuilding)
+                    return true
                 } else {
-                    console.warn("Неверные данные для координат корпуса:", buildingData);
-                    return false;
+                    console.warn("Неверные данные для координат корпуса:", buildingData)
+                    return false
                 }
             } catch (error) {
-                console.error('что-то создает ошибки загрузки координат корпусов: ', error);
-                return false;
+                console.error("что-то создает ошибки загрузки координат корпусов: ", error)
+                return false
             }
-        };
+        },
 
-        const fetchClassrooms = async (buildingId) => {
+        // Загрузка аудиторий
+        async fetchClassrooms(buildingId) {
             try {
-                const res = await axios.get(`rooms/buildingId/${buildingId}`);
-                classrooms.value = res.data.map((el, index) => {
+                const res = await axios.get(`rooms/buildingId/${buildingId}`)
+                this.classrooms = res.data.map((el) => {
                     const coords = el.Coordinates
-                        ? JSON.parse(
-                            el.Coordinates[0] === '"'
-                                ? el.Coordinates.slice(1, -1)
-                                : el.Coordinates
-                        ).points
-                        : null;
+                        ? JSON.parse(el.Coordinates[0] === '"' ? el.Coordinates.slice(1, -1) : el.Coordinates).points
+                        : null
                     return {
                         id: el.Id,
                         name: el.Name,
                         floor: el.Floor,
-                        number: el.Number + "/" + selectedBuildingShortName.value,
+                        number: el.Number + "/" + this.selectedBuildingShortName,
                         type: el.RoomType,
                         points: coords,
-                        buildingId
+                        buildingId,
                     }
-                });
-                classrooms.value = classrooms.value.filter(
-                    (classroom) => Array.isArray(classroom.points) && classroom.points.length > 0
-                );
-                extractFloors();
+                })
+                this.classrooms = this.classrooms.filter(
+                    (classroom) => Array.isArray(classroom.points) && classroom.points.length > 0,
+                )
+                this.extractFloors()
             } catch (error) {
-                console.error('что-то создает ошибки загрузки аудиторий: ', error);
+                console.error("что-то создает ошибки загрузки аудиторий: ", error)
             }
-        }
+        },
 
-        // получение этажей выбранного корпуса
-        const extractFloors = () => {
-            if (selectedBuilding.value) {
+        // Получение этажей выбранного корпуса
+        extractFloors() {
+            if (this.selectedBuilding) {
                 const floorsSet = new Set(
-                    classrooms.value
-                        .filter(room => room.buildingId === selectedBuilding.value)
-                        .map(room => room.floor)
-                );
-                avaliableFloors.value = Array.from(floorsSet)
-                    .filter(floor => floor !== undefined && floor !== null)
-                    .sort((a, b) => a - b);
+                    this.classrooms.filter((room) => room.buildingId === this.selectedBuilding).map((room) => room.floor),
+                )
+                this.avaliableFloors = Array.from(floorsSet)
+                    .filter((floor) => floor !== undefined && floor !== null)
+                    .sort((a, b) => a - b)
             }
-        };
+        },
 
-        // фильтрация аудиторий по выбранному этажу
-        const filterClassrooms = () => {
-            if (selectedBuilding.value && selectedFloor.value !== null) {
-                filteredClassrooms.value = classrooms.value.filter(room =>
-                    room.buildingId === selectedBuilding.value && room.floor === selectedFloor.value
-                );
+        // Фильтрация аудиторий по выбранному этажу
+        filterClassrooms() {
+            if (this.selectedBuilding && this.selectedFloor !== null) {
+                this.filteredClassrooms = this.classrooms.filter(
+                    (room) => room.buildingId === this.selectedBuilding && room.floor === this.selectedFloor,
+                )
             } else {
-                filteredClassrooms.value = [];
+                this.filteredClassrooms = []
             }
-        };
+        },
 
-        // размер карты в зависимости от размера окна сайта (нужны правки, но за допуск точно не вылезает)
-        const updateComputedSize = () => {
-            const headerOffset = 16;
-            const containerPadding = 2;
-            const avaliableHeight = window.innerHeight - headerOffset - containerPadding;
-            computedWidth.value = Math.min(1700, window.innerWidth - containerPadding - headerOffset);
-            computedHeight.value = avaliableHeight > 400 ? avaliableHeight : 400;
-        };
-
-        const updateUrlParams = () => {
+        // Обновление URL-параметров
+        updateUrlParams() {
             const query = {
-                korpus: selectedBuilding.value,
-                floor: selectedFloor.value
-            };
-            router.replace({ query });
-        };
-
-        watch(floorDataLoaded, (newValue) => {
-            if (newValue) {
-                centerMap();
+                korpus: this.selectedBuilding,
+                floor: this.selectedFloor,
             }
-        });
-
-        // что будет после монтирования компонента
-        onMounted(async () => {
-            // updateComputedSize();
-            // window.addEventListener('resize', updateComputedSize);
-
-            if (svgRef.value) {
-                svgRef.value.addEventListener("touchstart", handleTouchStart, { passive: false });
-                svgRef.value.addEventListener("touchmove", handleTouchMove, { passive: false });
-                svgRef.value.addEventListener("touchend", handleTouchEnd, { passive: false });
-            }
-
-            await fetchBuildings();
-
-            const { korpus, floor } = router.currentRoute.value.query;
-
-            if (korpus) {
-                selectedBuilding.value = korpus;
-                await onBuildingChange();
-                if (floor && selectedFloor.value !== Number(floor)) {
-                    selectedFloor.value = Number(floor);
-                    await onFloorChange();
-                }
-            }
-        });
-
-        // что будет прямо перед монтированием компонента
-        onBeforeUnmount(() => {
-            // window.removeEventListener('resize', updateComputedSize);
-
-            if (svgRef.value) {
-                svgRef.value.removeEventListener("touchstart", handleTouchStart);
-                svgRef.value.removeEventListener("touchmove", handleTouchMove);
-                svgRef.value.removeEventListener("touchend", handleTouchEnd);
-            }
-        });
-
-        return {
-            // переменные
-            svgRef,
-
-            scale,
-            computedWidth,
-            computedHeight,
-            selectedBuilding,
-            avaliableFloors,
-            selectedFloor,
-            panX,
-            panY,
-            buildings,
-            classrooms,
-            filteredBuildings,
-            filteredClassrooms,
-
-            floorDataLoaded,
-
-            isModalOpen,
-            scheduleData,
-            selectedClassroomName,
-            selectedClassroomNumber,
-            selectedClassroomType,
-
-            // методы
-            handleClassroomClick,
-            handleZoom,
-            startPan,
-            panMap,
-            endPan,
-            getFillColor,
-
-            fetchSchedule,
-            closeModal,
-
-            centerMap,
-
-            onBuildingChange,
-            onFloorChange,
-
-            handleTouchStart,
-            handleTouchMove,
-            handleTouchEnd,
-        };
+            router.replace({ query })
+        },
     },
 };
 </script>
 
 <style scoped>
 .floor-map {
-    padding: 20px;
+    padding: 10px;
     box-sizing: border-box;
     height: 100vh;
     width: 100vw;
     max-width: 1700px;
     display: flex;
     flex-direction: column;
+}
+
+@media (min-width: 412px) {
+    .floor-map {
+        padding: 20px;
+    }
 }
 
 .floor-map__container {
@@ -835,6 +793,12 @@ export default {
     background-color: rgba(255, 255, 255, 0.8);
     padding: 8px 12px;
     border-radius: 8px;
+}
+
+@media (max-width: 412px) {
+    .floor-map__controls {
+        top: 15px;
+    }
 }
 
 .floor-map__select {
@@ -942,31 +906,31 @@ export default {
     fill: #abb9e9;
 }
 
-.floor-map__schedule-item--practice .floor-map__schedule-type  {
+.floor-map__schedule-item--practice .floor-map__schedule-type {
     background-color: #fe8d01;
 }
 
-.floor-map__schedule-item--lab .floor-map__schedule-type  {
+.floor-map__schedule-item--lab .floor-map__schedule-type {
     background-color: #3f8370;
 }
 
-.floor-map__schedule-item--lecture .floor-map__schedule-type  {
+.floor-map__schedule-item--lecture .floor-map__schedule-type {
     background-color: #276192;
 }
 
-.floor-map__schedule-item--exam .floor-map__schedule-type  {
+.floor-map__schedule-item--exam .floor-map__schedule-type {
     background-color: #e91e63;
 }
 
-.floor-map__schedule-item--consult .floor-map__schedule-type  {
+.floor-map__schedule-item--consult .floor-map__schedule-type {
     background-color: #9c5f9f;
 }
 
-.floor-map__schedule-item--project .floor-map__schedule-type  {
+.floor-map__schedule-item--project .floor-map__schedule-type {
     background-color: #3f7ab2;
 }
 
-.floor-map__schedule-item--default .floor-map__schedule-type  {
+.floor-map__schedule-item--default .floor-map__schedule-type {
     background-color: #3f79b1;
 }
 
