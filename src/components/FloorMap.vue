@@ -7,14 +7,14 @@
                 <IconHome />
             </button>
             <!-- селектор корпуса -->
-            <select v-model="selectedBuilding" @change="onBuildingChange"
+            <select v-model="selectedBuilding" @change="handleBuildingChange"
                 class="floor-map__select floor-map__select--building">
                 <option v-for="building in buildings" :key="building.buildingId" :value="building.buildingId">
                     {{ building.shortname }} - {{ building.name }}
                 </option>
             </select>
             <!-- селектор этажа -->
-            <select v-if="selectedBuilding" v-model="selectedFloor" @change="onFloorChange"
+            <select v-if="selectedBuilding" v-model="selectedFloor" @change="handleFloorChange"
                 class="floor-map__select floor-map__select--floor">
                 <option v-for="floor in avaliableFloors" :key="floor" :value="floor">
                     Этаж {{ floor }}
@@ -136,7 +136,6 @@
 </template>
 
 <script>
-import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue"
 import axios from "../axios"
 import router from '@/router'
 import polylabel from "polylabel"
@@ -170,7 +169,7 @@ export default {
             selectedClassroomShortName: "",
             selectedFloor: null,
             avaliableFloors: [],
-            floorDataLoaded: false,
+            isLoading: false,
 
             isModalOpen: false,
             selectedClassroomName: "",
@@ -181,17 +180,10 @@ export default {
             touchStartX: 0,
             touchStartY: 0,
             isDragging: false,
-            dragThreshold: 5,
+            dragThreshold: 10,
             initialTouchDistance: null,
             initialScale: 1,
         }
-    },
-    watch: {
-        floorDataLoaded(newValue) {
-            if (newValue) {
-                this.centerMap()
-            }
-        },
     },
     mounted() {
         this.$nextTick(() => {
@@ -203,26 +195,8 @@ export default {
             }
         })
 
-        // Сначала загружаем список зданий
-        this.fetchBuildings().then(() => {
-            // После загрузки зданий проверяем URL-параметры
-            const { korpus, floor } = router.currentRoute.value.query
-
-            if (korpus) {
-                // Проверяем, существует ли такой корпус в списке
-                const buildingExists = this.buildings.some(building => building.buildingId === korpus)
-
-                if (buildingExists) {
-                    this.selectedBuilding = korpus
-                    this.onBuildingChange().then(() => {
-                        if (floor && this.selectedFloor !== Number(floor)) {
-                            this.selectedFloor = Number(floor)
-                            this.onFloorChange()
-                        }
-                    })
-                }
-            }
-        })
+        // переход со страницы выбора корпуса
+        this.initializeFromUrlParams()
     },
     beforeDestroy() {
         if (this.svgRef) {
@@ -232,6 +206,148 @@ export default {
         }
     },
     methods: {
+        // 1. получение корпуса из параметров этажа
+        async initializeFromUrlParams() {
+            this.isLoading = true
+
+            try {
+                await this.loadBuildings()
+
+                const { korpus, floor } = router.currentRoute.value.query
+
+                if (korpus && this.buildings.some((b) => b.buildingId === korpus)) {
+                    this.selectedBuilding = korpus
+
+                    await this.loadClassrooms(this.selectedBuilding, floor ? Number(floor) : null)
+                } else if (this.buildings.length > 0) {
+                    this.selectedBuilding = this.buildings[0].buildingId
+                    this.selectedClassroomName = this.buildings[0].shortname
+
+                    await this.loadClassrooms(this.selectedBuilding)
+                }
+            } catch (error) {
+                console.error("что-то создает ошибки инициализации:", error)
+            } finally {
+                this.isLoading = false
+            }
+        },
+
+        // загрузка списка зданий
+        async loadBuildings() {
+            try {
+                const res = await axios.get("/buildings")
+                this.buildings = res.data.map((el) => ({
+                    buildingId: el.Id,
+                    name: el.Name,
+                    shortname: el.ShortName,
+                }))
+                return true
+            } catch (error) {
+                console.error("что-то создает ошибки загрузки корпусов:", error)
+                return false
+            }
+        },
+
+        // 2. получение аудторий корпуса
+        async loadClassrooms(buildingId, targetFloor = null) {
+            if (!buildingId) return
+
+            this.isLoading = true
+
+            try {
+                const selectedBuildingInfo = this.buildings.find((b) => b.buildingId === buildingId)
+                // console.log(selectedBuildingInfo)
+                if (selectedBuildingInfo) {
+                    this.selectedClassroomShortName = selectedBuildingInfo.shortname
+                    // console.log(this.selectedClassroomShortName)
+                }
+
+                this.classrooms = []
+                this.filteredClassrooms = []
+                this.avaliableFloors = []
+                this.filteredBuildings = []
+
+                await this.fetchClassrooms(buildingId)
+
+                // 3. получение этажей корпуса
+                this.extractFloors()
+
+                if (this.avaliableFloors.length === 0) {
+                    console.warn("у корпуса нет этажей")
+                    this.selectedFloor = null
+                    this.isLoading = false
+                    return
+                }
+
+                this.selectFloor(targetFloor)
+
+                await this.loadFloorData()
+            } catch (error){
+                console.error("что-то создает ошибки загрузки аудиторий:", error)
+            } finally {
+                this.isLoading = false
+            }
+        },
+
+        // 4. выбор этажа
+        selectFloor(targetFloor = null) {
+            if (this.avaliableFloors.length === 0) {
+                this.selectFloor = null
+                return
+            }
+
+            if (targetFloor !== null && this.avaliableFloors.includes(targetFloor)) {
+                this.selectedFloor = targetFloor
+            } else {
+                this.selectedFloor =
+                    this.avaliableFloors[0] === 0 && this.avaliableFloors.length > 1
+                        ? this.avaliableFloors[1]
+                        : this.avaliableFloors[0]
+            }
+        },
+
+        // 5-9. загрузка данных этажа и отрисовка
+        async loadFloorData() {
+            if (!this.selectedBuilding || this.selectedFloor === null) {
+                console.warn("не выбран корпус или этаж")
+                return
+            }
+
+            this.isLoading = true
+
+            try {
+                this.updateUrlParams()
+
+                const coordsLoaded = await this.fetchBuildingCoordinates(this.selectedBuilding, this.selectedFloor)
+
+                if (!coordsLoaded) {
+                    console.warn("не удалось загрузить координаты этажа")
+                    this.isLoading = false
+                    return
+                }
+
+                this.filterClassrooms()
+
+                this.$nextTick(() => {
+                    this.centerMap()
+                })
+            } catch (error) {
+                console.error("что-то создает ошибки загрузки данных этажа:", error)
+            } finally {
+                this.isLoading = false
+            }
+        },
+
+        handleBuildingChange() {
+            if (this.selectedBuilding) {
+                this.loadClassrooms(this.selectedBuilding)
+            }
+        },
+
+        handleFloorChange() {
+            this.loadFloorData()
+        },
+
         // классы для аудиторий
         getClassroomClass(type) {
             if (!type) return 'floor-map__classroom--default';
@@ -474,6 +590,8 @@ export default {
                 const width = maxX - minX
                 const height = maxY - minY
 
+                if (!this.svgRef) return
+
                 const { width: containerWidth, height: containerHeight } = this.svgRef.getBoundingClientRect()
 
                 const scaleX = containerWidth / (width + 20)
@@ -542,87 +660,6 @@ export default {
             this.scheduleData = []
         },
 
-        async fetchBuildings() {
-            try {
-                const res = await axios.get("/buildings")
-                this.buildings = res.data.map((el) => ({
-                    buildingId: el.Id,
-                    name: el.Name,
-                    shortname: el.ShortName,
-                }))
-
-                // Сохраняем текущий выбранный корпус
-                const currentSelectedBuilding = this.selectedBuilding
-
-                // Устанавливаем selectedBuilding только если он еще не установлен
-                if (!currentSelectedBuilding) {
-                    this.selectedBuilding = this.buildings[0].buildingId
-                    this.selectedBuildingShortName = this.buildings[0].shortname
-                } else {
-                    // Если корпус уже выбран, обновляем только shortname
-                    const selectedBuildingInfo = this.buildings.find(
-                        (building) => building.buildingId === currentSelectedBuilding
-                    )
-                    if (selectedBuildingInfo) {
-                        this.selectedBuildingShortName = selectedBuildingInfo.shortname
-                    }
-                }
-
-                this.onBuildingChange()
-            } catch (error) {
-                console.error("что-то создает ошибки загрузки корпусов: ", error)
-            }
-        },
-
-        // Обработка изменения корпуса
-        async onBuildingChange() {
-            if (this.selectedBuilding) {
-                this.floorDataLoaded = false
-
-                this.classrooms = []
-                this.filteredClassrooms = []
-                this.avaliableFloors = []
-                this.filteredBuildings = []
-
-                const selectedBuildingInfo = this.buildings.find((building) => building.buildingId === this.selectedBuilding)
-                // console.log(selectedBuildingInfo)
-                this.selectedBuildingShortName = selectedBuildingInfo.shortname
-                // console.log(this.selectedClassroomShortName)
-
-                await this.fetchClassrooms(this.selectedBuilding)
-
-                if (this.avaliableFloors.length > 0) {
-                    const { floor } = router.currentRoute.value.query
-                    const floorNumber = Number(floor)
-
-                    if (floor && this.avaliableFloors.includes(floorNumber)) {
-                        this.selectedFloor = floorNumber
-                    } else {
-                        this.selectedFloor = this.avaliableFloors[0] === 0 ? this.avaliableFloors[1] : this.avaliableFloors[0]
-                    }
-                } else {
-                    console.warn("у корпуса нет этажей")
-                    this.selectedFloor = null
-                }
-
-                this.updateUrlParams()
-                await this.fetchBuildingCoordinates(this.selectedBuilding, this.selectedFloor)
-                this.filterClassrooms()
-                this.floorDataLoaded = true
-                this.centerMap()
-            }
-        },
-
-        // Обработка изменения этажа
-        async onFloorChange() {
-            this.floorDataLoaded = false
-            this.updateUrlParams()
-            await this.fetchBuildingCoordinates(this.selectedBuilding, this.selectedFloor)
-            this.filterClassrooms()
-            this.floorDataLoaded = true
-            this.centerMap()
-        },
-
         // Загрузка координат корпуса
         async fetchBuildingCoordinates(buildingId, floor) {
             try {
@@ -654,27 +691,37 @@ export default {
         // Загрузка аудиторий
         async fetchClassrooms(buildingId) {
             try {
-                const res = await axios.get(`rooms/buildingId/${buildingId}`)
+                const res = await axios.get(`rooms/buildingId/${buildingId}`);
+
+                // Получаем shortName для текущего здания
+                const buildingInfo = this.buildings.find(b => b.buildingId === buildingId);
+                const shortName = buildingInfo ? buildingInfo.shortname : this.selectedBuildingShortName;
+
                 this.classrooms = res.data.map((el) => {
                     const coords = el.Coordinates
-                        ? JSON.parse(el.Coordinates[0] === '"' ? el.Coordinates.slice(1, -1) : el.Coordinates).points
-                        : null
+                        ? JSON.parse(
+                            el.Coordinates[0] === '"'
+                                ? el.Coordinates.slice(1, -1)
+                                : el.Coordinates
+                        ).points
+                        : null;
                     return {
                         id: el.Id,
                         name: el.Name,
                         floor: el.Floor,
-                        number: el.Number + "/" + this.selectedBuildingShortName,
+                        number: el.Number + "/" + shortName, // Используем локальную переменную
                         type: el.RoomType,
                         points: coords,
-                        buildingId,
+                        buildingId
                     }
-                })
+                });
                 this.classrooms = this.classrooms.filter(
-                    (classroom) => Array.isArray(classroom.points) && classroom.points.length > 0,
-                )
-                this.extractFloors()
+                    (classroom) => Array.isArray(classroom.points) && classroom.points.length > 0
+                );
+                return true;
             } catch (error) {
-                console.error("что-то создает ошибки загрузки аудиторий: ", error)
+                console.error('что-то создает ошибки загрузки аудиторий:', error);
+                return false;
             }
         },
 
